@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Needed to download forecasts. All traffic is HTTPS; cleartext is disabled below. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!--
         Backups are disabled: allowBackup="false" covers Android 11 and lower, and
         dataExtractionRules excludes everything on Android 12+. fullBackupContent is therefore
@@ -15,6 +18,7 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.DailyWeather"
+        android:usesCleartextTraffic="false"
         tools:ignore="DataExtractionRules">
 
         <activity

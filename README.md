@@ -38,7 +38,7 @@ _Screenshots will be added once the main screens are implemented._
 - **Kotlin** with **Jetpack Compose** and **Material 3**
 - **Navigation Compose** with type-safe (serializable) routes
 - **Kotlin Coroutines / Flow** for asynchronous work _(upcoming)_
-- **Retrofit/OkHttp + kotlinx.serialization** for networking _(upcoming)_
+- **Retrofit/OkHttp + kotlinx.serialization** for networking
 - **Room** / **DataStore** for local persistence _(upcoming)_
 - **WorkManager** for the daily notification _(upcoming)_
 - **Gradle Kotlin DSL** with a version catalog (`gradle/libs.versions.toml`)
@@ -71,8 +71,8 @@ Package layout (`com.ah0890.dailyweather`):
 
 ```text
 presentation/   Compose screens and ViewModels (home, forecast, settings, navigation, components)
-domain/         Pure Kotlin models, repository interfaces and use cases      (upcoming)
-data/           API client, local storage and repository implementations     (upcoming)
+domain/         Pure Kotlin models (repository interfaces and use cases upcoming)
+data/           Open-Meteo API client (local storage and repositories upcoming)
 location/       Location permission and one-shot location lookup             (upcoming)
 notifications/  Daily notification scheduling and content                    (upcoming)
 ui/theme/       Colours, typography, shapes and weather backdrops
