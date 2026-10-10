@@ -18,7 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.ah0890.dailyweather.presentation.forecast.ForecastScreen
-import com.ah0890.dailyweather.presentation.home.HomeScreen
+import com.ah0890.dailyweather.presentation.home.HomeRoute
 import com.ah0890.dailyweather.presentation.settings.SettingsScreen
 
 @Composable
@@ -57,7 +57,7 @@ fun DailyWeatherApp() {
             startDestination = TodayRoute,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable<TodayRoute> { HomeScreen() }
+            composable<TodayRoute> { HomeRoute() }
             composable<ForecastRoute> { ForecastScreen() }
             composable<SettingsRoute> { SettingsScreen() }
         }

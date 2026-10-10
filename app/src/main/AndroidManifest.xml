@@ -6,11 +6,18 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!--
+        Approximate location is enough for a weather forecast, so precise (fine) location and
+        background location are deliberately not requested.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!--
         Backups are disabled: allowBackup="false" covers Android 11 and lower, and
         dataExtractionRules excludes everything on Android 12+. fullBackupContent is therefore
         unnecessary on older versions.
     -->
     <application
+        android:name=".DailyWeatherApplication"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"

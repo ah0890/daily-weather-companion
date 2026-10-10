@@ -20,6 +20,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | --- | --- |
 | Compose + Material 3 foundation, custom light/dark theme | ✅ Done |
 | Bottom navigation: Today · 7 days · Settings | ✅ Done |
+| Location permission flow and one-shot current location | ✅ Done |
 | Current weather for the saved/current location | Planned |
 | Hourly forecast with rain probability timeline | Planned |
 | Rain timing and umbrella recommendation | Planned |
@@ -73,7 +74,7 @@ Package layout (`com.ah0890.dailyweather`):
 presentation/   Compose screens and ViewModels (home, forecast, settings, navigation, components)
 domain/         Pure Kotlin models and repository interfaces (use cases upcoming)
 data/           Open-Meteo API client and weather repository (local cache upcoming)
-location/       Location permission and one-shot location lookup             (upcoming)
+location/       One-shot location lookup and place-name resolution
 notifications/  Daily notification scheduling and content                    (upcoming)
 ui/theme/       Colours, typography, shapes and weather backdrops
 ```
@@ -95,11 +96,21 @@ The data layer sits behind a repository interface, so the provider can be swappe
 
 ## Location Permissions
 
-_(Planned behaviour.)_ The app will request **approximate/precise foreground location only** when the user asks it to find their location, after explaining why. It will:
+The app requests **approximate (coarse) foreground location only** — city-level accuracy is all a forecast needs. Precise and background location are never requested.
+
+How it works today:
+
+- The Today screen first explains why location is needed; the system dialog appears only after the user taps **Allow location access**.
+- If the user declines once, a gentle **Try again** is offered. If Android will no longer show the dialog, the app explains how to enable it and offers **Open settings** — it never re-prompts on its own.
+- Returning from system settings is detected automatically.
+- With permission, the app asks the platform `LocationManager` for **one** fix (fused/network first, GPS as a fallback on Android 12+) and then stops listening. A recent last-known location is used if no fresh fix arrives in time.
+- If location services are switched off, the app says so and links to the device's location settings.
+- The place name is looked up with Android's `Geocoder` using coordinates rounded to ~1 km. On most devices the geocoder is provided by Google Play services and may contact Google's servers.
+
+Planned:
 
 - save the last successful location (coordinates, place name, update time) on the device;
 - use that saved location for the daily notification instead of tracking location in the background;
-- never request background location;
 - keep working with a saved location if permission is denied or GPS is unavailable.
 
 ## Notification System

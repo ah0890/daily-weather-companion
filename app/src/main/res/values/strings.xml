@@ -8,8 +8,28 @@
     <string name="home_greeting_morning">Good morning</string>
     <string name="home_greeting_afternoon">Good afternoon</string>
     <string name="home_greeting_evening">Good evening</string>
-    <string name="home_setup_title">Your daily outlook lives here</string>
-    <string name="home_setup_body">Once a location is set, this screen will show today\'s weather, when rain is likely, and whether to take an umbrella.</string>
+    <string name="home_located_title">Weather for %1$s</string>
+    <string name="home_located_body">Today\'s outlook, rain timing and umbrella advice for this area will appear here.</string>
+
+    <string name="location_finding">Finding your location…</string>
+    <string name="location_current">Current location</string>
+    <string name="location_not_set">Location not set</string>
+    <string name="location_try_again">Try again</string>
+
+    <string name="permission_title">See the weather where you are</string>
+    <string name="permission_body">Daily Weather uses your approximate location to fetch the forecast for your area. It is checked only when you open the app or ask it to update, and is never tracked in the background.</string>
+    <string name="permission_allow">Allow location access</string>
+    <string name="permission_denied_title">Location access needed</string>
+    <string name="permission_denied_body">Without location access the app can\'t find your local forecast. You can allow it whenever you\'re ready.</string>
+    <string name="permission_permanent_title">Location access is turned off</string>
+    <string name="permission_permanent_body">To see local weather, open Settings, go to Permissions → Location, and choose \"Allow only while using the app\".</string>
+    <string name="permission_open_settings">Open settings</string>
+
+    <string name="location_disabled_title">Location services are off</string>
+    <string name="location_disabled_body">Turn on location for your device, then come back to the app.</string>
+    <string name="location_open_location_settings">Turn on location</string>
+    <string name="location_unavailable_title">Couldn\'t find your location</string>
+    <string name="location_unavailable_body">This can happen indoors or without a network connection. Please try again in a moment.</string>
 
     <string name="forecast_title">Next 7 days</string>
     <string name="forecast_empty">The week ahead will appear here once weather data is available.</string>
