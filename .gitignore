@@ -1,0 +1,30 @@
+# Gradle / build output
+.gradle/
+.kotlin/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local configuration — contains SDK paths and any API keys. Never commit.
+local.properties
+secrets.properties
+*.env
+.env*
+
+# Signing material
+*.jks
+*.keystore
+keystore.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+.navigation/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Daily Weather</string>
+
+    <string name="nav_today">Today</string>
+    <string name="nav_forecast">7 days</string>
+    <string name="nav_settings">Settings</string>
+
+    <string name="home_greeting_morning">Good morning</string>
+    <string name="home_greeting_afternoon">Good afternoon</string>
+    <string name="home_greeting_evening">Good evening</string>
+    <string name="home_setup_title">Your daily outlook lives here</string>
+    <string name="home_setup_body">Once a location is set, this screen will show today\'s weather, when rain is likely, and whether to take an umbrella.</string>
+
+    <string name="forecast_title">Next 7 days</string>
+    <string name="forecast_empty">The week ahead will appear here once weather data is available.</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_empty">Notifications, units, theme and location preferences will be configurable here.</string>
+</resources>
