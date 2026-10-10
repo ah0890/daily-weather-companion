@@ -71,8 +71,8 @@ Package layout (`com.ah0890.dailyweather`):
 
 ```text
 presentation/   Compose screens and ViewModels (home, forecast, settings, navigation, components)
-domain/         Pure Kotlin models (repository interfaces and use cases upcoming)
-data/           Open-Meteo API client (local storage and repositories upcoming)
+domain/         Pure Kotlin models and repository interfaces (use cases upcoming)
+data/           Open-Meteo API client and weather repository (local cache upcoming)
 location/       Location permission and one-shot location lookup             (upcoming)
 notifications/  Daily notification scheduling and content                    (upcoming)
 ui/theme/       Colours, typography, shapes and weather backdrops
