@@ -21,6 +21,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | Compose + Material 3 foundation, custom light/dark theme | ✅ Done |
 | Bottom navigation: Today · 7 days · Settings | ✅ Done |
 | Location permission flow and one-shot current location | ✅ Done |
+| Saved location with manual update | ✅ Done |
 | Current weather for the saved/current location | Planned |
 | Hourly forecast with rain probability timeline | Planned |
 | Rain timing and umbrella recommendation | Planned |
@@ -38,9 +39,9 @@ _Screenshots will be added once the main screens are implemented._
 
 - **Kotlin** with **Jetpack Compose** and **Material 3**
 - **Navigation Compose** with type-safe (serializable) routes
-- **Kotlin Coroutines / Flow** for asynchronous work _(upcoming)_
+- **Kotlin Coroutines / Flow** for asynchronous work and observable state
 - **Retrofit/OkHttp + kotlinx.serialization** for networking
-- **Room** / **DataStore** for local persistence _(upcoming)_
+- **DataStore** for the saved location; **Room** for the forecast cache _(upcoming)_
 - **WorkManager** for the daily notification _(upcoming)_
 - **Gradle Kotlin DSL** with a version catalog (`gradle/libs.versions.toml`)
 
@@ -73,7 +74,7 @@ Package layout (`com.ah0890.dailyweather`):
 ```text
 presentation/   Compose screens and ViewModels (home, forecast, settings, navigation, components)
 domain/         Pure Kotlin models and repository interfaces (use cases upcoming)
-data/           Open-Meteo API client and weather repository (local cache upcoming)
+data/           Open-Meteo API client, weather repository and saved-location storage
 location/       One-shot location lookup and place-name resolution
 notifications/  Daily notification scheduling and content                    (upcoming)
 ui/theme/       Colours, typography, shapes and weather backdrops
@@ -107,11 +108,24 @@ How it works today:
 - If location services are switched off, the app says so and links to the device's location settings.
 - The place name is looked up with Android's `Geocoder` using coordinates rounded to ~1 km. On most devices the geocoder is provided by Google Play services and may contact Google's servers.
 
-Planned:
+### Saved location
 
-- save the last successful location (coordinates, place name, update time) on the device;
-- use that saved location for the daily notification instead of tracking location in the background;
-- keep working with a saved location if permission is denied or GPS is unavailable.
+The last successfully found location is saved on the device in a private
+[DataStore](https://developer.android.com/topic/libraries/architecture/datastore) file containing only:
+
+| Field | Example |
+| --- | --- |
+| Latitude / longitude, rounded to 2 decimals (~1 km) | `51.51`, `-0.13` |
+| Place name | `Greater London` |
+| When it was saved | `2026-10-10T06:45Z` |
+
+- On launch the saved location is shown immediately — the user doesn't have to enable location every time.
+- A new one-shot lookup happens only if nothing is saved, if the saved location is more than 6 hours old (silently, keeping the saved one if it fails), or when the user taps **Update location**.
+- The header always says which location is in use: **Saved location** or **Current location**, with how long ago it was updated.
+- If permission is later revoked or GPS is unavailable, the saved location keeps working and a small note explains why it wasn't refreshed.
+- The saved location is excluded from cloud backup and device transfer.
+
+Planned: use the saved location for the daily notification instead of tracking location in the background.
 
 ## Notification System
 

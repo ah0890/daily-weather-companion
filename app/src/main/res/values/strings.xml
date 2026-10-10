@@ -12,9 +12,33 @@
     <string name="home_located_body">Today\'s outlook, rain timing and umbrella advice for this area will appear here.</string>
 
     <string name="location_finding">Finding your location…</string>
+    <string name="location_updating">Updating location…</string>
     <string name="location_current">Current location</string>
+    <string name="location_saved">Saved location</string>
     <string name="location_not_set">Location not set</string>
     <string name="location_try_again">Try again</string>
+    <string name="location_update">Update location</string>
+    <!-- e.g. "Saved location · updated 3 h ago" -->
+    <string name="location_source_with_age">%1$s · updated %2$s</string>
+
+    <string name="age_just_now">just now</string>
+    <plurals name="age_minutes">
+        <item quantity="one">%d min ago</item>
+        <item quantity="other">%d min ago</item>
+    </plurals>
+    <plurals name="age_hours">
+        <item quantity="one">%d hour ago</item>
+        <item quantity="other">%d hours ago</item>
+    </plurals>
+    <plurals name="age_days">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+
+    <string name="saved_notice_permission">Location access is off, so your saved location is being used.</string>
+    <string name="saved_notice_disabled">Location services are off, so your saved location is being used.</string>
+    <string name="saved_notice_unavailable">Couldn\'t update your location, so your saved location is being used.</string>
+    <string name="action_allow">Allow</string>
 
     <string name="permission_title">See the weather where you are</string>
     <string name="permission_body">Daily Weather uses your approximate location to fetch the forecast for your area. It is checked only when you open the app or ask it to update, and is never tracked in the background.</string>

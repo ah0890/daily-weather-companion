@@ -1,21 +1,41 @@
 package com.ah0890.dailyweather.presentation.home
 
-import com.ah0890.dailyweather.domain.model.LocationData
+import com.ah0890.dailyweather.domain.model.SavedLocation
 
-/** What the Today screen knows about the location it should show weather for. */
-sealed interface LocationUiState {
+/**
+ * Location shown on the Today screen and what the app is currently doing about it.
+ *
+ * @property location the location weather is shown for, or null if none is known yet.
+ * @property source whether [location] was found during this session or loaded from storage.
+ */
+data class LocationUiState(
+    val location: SavedLocation? = null,
+    val source: LocationSource = LocationSource.Saved,
+    val status: LocationStatus = LocationStatus.Checking,
+)
 
-    /** Permission hasn't been checked yet (first frame). */
-    data object Checking : LocationUiState
+enum class LocationSource {
+    /** Loaded from storage; may be from an earlier day. */
+    Saved,
 
-    /** The app needs location permission before it can continue. */
-    data class PermissionRequired(val denial: PermissionDenial) : LocationUiState
+    /** Found from the device's location during this session. */
+    Current,
+}
 
-    data object Locating : LocationUiState
+sealed interface LocationStatus {
 
-    data class Located(val location: LocationData) : LocationUiState
+    /** Permission and saved location haven't been checked yet (first frame). */
+    data object Checking : LocationStatus
 
-    data class Failed(val reason: LocationFailure) : LocationUiState
+    /** Nothing in progress. */
+    data object Idle : LocationStatus
+
+    data object Locating : LocationStatus
+
+    /** The app needs location permission to (re)discover the location. */
+    data class PermissionRequired(val denial: PermissionDenial) : LocationStatus
+
+    data class Failed(val reason: LocationFailure) : LocationStatus
 }
 
 enum class PermissionDenial {

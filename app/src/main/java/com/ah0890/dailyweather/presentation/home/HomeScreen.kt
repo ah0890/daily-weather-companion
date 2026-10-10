@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,11 +25,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,10 +57,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.Coordinates
 import com.ah0890.dailyweather.domain.model.LocationData
+import com.ah0890.dailyweather.domain.model.SavedLocation
+import com.ah0890.dailyweather.presentation.components.RelativeAge
+import com.ah0890.dailyweather.presentation.components.text
 import com.ah0890.dailyweather.ui.theme.DailyWeatherTheme
 import com.ah0890.dailyweather.ui.theme.LocalDarkTheme
 import com.ah0890.dailyweather.ui.theme.WeatherBackdrop
 import com.ah0890.dailyweather.ui.theme.WeatherMood
+import java.time.Instant
 import java.time.LocalTime
 
 private const val LOCATION_PERMISSION = Manifest.permission.ACCESS_COARSE_LOCATION
@@ -65,7 +72,7 @@ private const val LOCATION_PERMISSION = Manifest.permission.ACCESS_COARSE_LOCATI
 /** Stateful entry point: wires the ViewModel, the permission dialog and system settings. */
 @Composable
 fun HomeRoute(viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)) {
-    val locationState by viewModel.locationState.collectAsStateWithLifecycle()
+    val state by viewModel.locationState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = LocalActivity.current
 
@@ -84,21 +91,34 @@ fun HomeRoute(viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Facto
     }
 
     HomeScreen(
-        locationState = locationState,
-        onRequestPermission = { permissionLauncher.launch(LOCATION_PERMISSION) },
-        onOpenAppSettings = { context.openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, withPackage = true) },
-        onOpenLocationSettings = { context.openSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS) },
-        onRetry = viewModel::retry,
+        state = state,
+        actions = HomeActions(
+            requestPermission = { permissionLauncher.launch(LOCATION_PERMISSION) },
+            updateLocation = {
+                if (context.hasLocationPermission()) {
+                    viewModel.updateLocation()
+                } else {
+                    permissionLauncher.launch(LOCATION_PERMISSION)
+                }
+            },
+            openAppSettings = { context.openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, withPackage = true) },
+            openLocationSettings = { context.openSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS) },
+        ),
     )
 }
 
+/** User actions the Today screen can trigger. */
+class HomeActions(
+    val requestPermission: () -> Unit = {},
+    val updateLocation: () -> Unit = {},
+    val openAppSettings: () -> Unit = {},
+    val openLocationSettings: () -> Unit = {},
+)
+
 @Composable
 fun HomeScreen(
-    locationState: LocationUiState,
-    onRequestPermission: () -> Unit,
-    onOpenAppSettings: () -> Unit,
-    onOpenLocationSettings: () -> Unit,
-    onRetry: () -> Unit,
+    state: LocationUiState,
+    actions: HomeActions,
     modifier: Modifier = Modifier,
 ) {
     val greeting = remember { greetingFor(LocalTime.now().hour) }
@@ -117,47 +137,73 @@ fun HomeScreen(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.semantics { heading() },
             )
-            LocationLabel(locationState)
+            LocationHeader(state, onUpdateLocation = actions.updateLocation)
         }
 
-        when (locationState) {
-            LocationUiState.Checking -> Unit
-            is LocationUiState.PermissionRequired -> PermissionCard(
-                denial = locationState.denial,
-                onRequestPermission = onRequestPermission,
-                onOpenAppSettings = onOpenAppSettings,
+        val location = state.location
+        if (location != null) {
+            LocatedCard(location.location, state.source)
+            SavedLocationNotice(state.status, actions)
+        } else {
+            NoLocationContent(state.status, actions)
+        }
+    }
+}
+
+@Composable
+private fun LocationHeader(state: LocationUiState, onUpdateLocation: () -> Unit) {
+    val location = state.location
+    if (location == null) {
+        // While checking or locating, the card below already says what is happening.
+        if (state.status is LocationStatus.PermissionRequired || state.status is LocationStatus.Failed) {
+            LocationName(stringResource(R.string.location_not_set))
+        }
+        return
+    }
+
+    val sourceLabel = stringResource(
+        if (state.source == LocationSource.Current) R.string.location_current else R.string.location_saved,
+    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            LocationName(location.location.name ?: sourceLabel)
+            val detail = if (state.status == LocationStatus.Locating) {
+                stringResource(R.string.location_updating)
+            } else {
+                val age = RelativeAge.between(location.savedAt, Instant.now()).text()
+                stringResource(R.string.location_source_with_age, sourceLabel, age)
+            }
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(start = 22.dp)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
             )
-            LocationUiState.Locating -> LocatingCard()
-            is LocationUiState.Located -> LocatedCard(locationState.location)
-            is LocationUiState.Failed -> when (locationState.reason) {
-                LocationFailure.ServicesDisabled -> MessageCard(
-                    title = R.string.location_disabled_title,
-                    body = R.string.location_disabled_body,
-                    primaryAction = R.string.location_open_location_settings to onOpenLocationSettings,
-                    secondaryAction = R.string.location_try_again to onRetry,
-                )
-                LocationFailure.Unavailable -> MessageCard(
-                    title = R.string.location_unavailable_title,
-                    body = R.string.location_unavailable_body,
-                    primaryAction = R.string.location_try_again to onRetry,
-                )
+        }
+        // Fixed-size slot so the layout doesn't jump when the button turns into a spinner.
+        Box(modifier = Modifier.size(width = 48.dp, height = 48.dp), contentAlignment = Alignment.Center) {
+            if (state.status == LocationStatus.Locating) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            } else {
+                IconButton(onClick = onUpdateLocation) {
+                    Icon(
+                        imageVector = Icons.Rounded.Refresh,
+                        contentDescription = stringResource(R.string.location_update),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun LocationLabel(state: LocationUiState) {
-    val text = when (state) {
-        is LocationUiState.Located -> state.location.name ?: stringResource(R.string.location_current)
-        // While checking or locating, the card below already says what is happening.
-        LocationUiState.Checking, LocationUiState.Locating -> return
-        is LocationUiState.PermissionRequired, is LocationUiState.Failed -> stringResource(R.string.location_not_set)
-    }
+private fun LocationName(text: String) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
     ) {
         Icon(
             imageVector = Icons.Rounded.LocationOn,
@@ -168,33 +214,87 @@ private fun LocationLabel(state: LocationUiState) {
         Text(
             text = text,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
 
+/** Full-size cards shown before any location is known. */
 @Composable
-private fun PermissionCard(
-    denial: PermissionDenial,
-    onRequestPermission: () -> Unit,
-    onOpenAppSettings: () -> Unit,
-) {
-    when (denial) {
-        PermissionDenial.None -> MessageCard(
-            title = R.string.permission_title,
-            body = R.string.permission_body,
-            primaryAction = R.string.permission_allow to onRequestPermission,
-        )
-        PermissionDenial.Denied -> MessageCard(
-            title = R.string.permission_denied_title,
-            body = R.string.permission_denied_body,
-            primaryAction = R.string.location_try_again to onRequestPermission,
-        )
-        PermissionDenial.Permanent -> MessageCard(
-            title = R.string.permission_permanent_title,
-            body = R.string.permission_permanent_body,
-            primaryAction = R.string.permission_open_settings to onOpenAppSettings,
-        )
+private fun NoLocationContent(status: LocationStatus, actions: HomeActions) {
+    when (status) {
+        LocationStatus.Checking, LocationStatus.Idle -> Unit
+        LocationStatus.Locating -> LocatingCard()
+        is LocationStatus.PermissionRequired -> when (status.denial) {
+            PermissionDenial.None -> MessageCard(
+                title = R.string.permission_title,
+                body = R.string.permission_body,
+                primaryAction = R.string.permission_allow to actions.requestPermission,
+            )
+            PermissionDenial.Denied -> MessageCard(
+                title = R.string.permission_denied_title,
+                body = R.string.permission_denied_body,
+                primaryAction = R.string.location_try_again to actions.requestPermission,
+            )
+            PermissionDenial.Permanent -> MessageCard(
+                title = R.string.permission_permanent_title,
+                body = R.string.permission_permanent_body,
+                primaryAction = R.string.permission_open_settings to actions.openAppSettings,
+            )
+        }
+        is LocationStatus.Failed -> when (status.reason) {
+            LocationFailure.ServicesDisabled -> MessageCard(
+                title = R.string.location_disabled_title,
+                body = R.string.location_disabled_body,
+                primaryAction = R.string.location_open_location_settings to actions.openLocationSettings,
+                secondaryAction = R.string.location_try_again to actions.updateLocation,
+            )
+            LocationFailure.Unavailable -> MessageCard(
+                title = R.string.location_unavailable_title,
+                body = R.string.location_unavailable_body,
+                primaryAction = R.string.location_try_again to actions.updateLocation,
+            )
+        }
+    }
+}
+
+/** A small, non-blocking note shown when the saved location couldn't be refreshed. */
+@Composable
+private fun SavedLocationNotice(status: LocationStatus, actions: HomeActions) {
+    val (message, action) = when (status) {
+        is LocationStatus.PermissionRequired -> R.string.saved_notice_permission to
+            if (status.denial == PermissionDenial.Permanent) {
+                R.string.permission_open_settings to actions.openAppSettings
+            } else {
+                R.string.action_allow to actions.requestPermission
+            }
+        is LocationStatus.Failed -> when (status.reason) {
+            LocationFailure.ServicesDisabled ->
+                R.string.saved_notice_disabled to (R.string.location_open_location_settings to actions.openLocationSettings)
+            LocationFailure.Unavailable ->
+                R.string.saved_notice_unavailable to (R.string.location_try_again to actions.updateLocation)
+        }
+        LocationStatus.Checking, LocationStatus.Idle, LocationStatus.Locating -> return
+    }
+    Card(
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics { liveRegion = LiveRegionMode.Polite },
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(message),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = action.second) { Text(stringResource(action.first)) }
+        }
     }
 }
 
@@ -262,9 +362,11 @@ private fun LocatingCard() {
 }
 
 @Composable
-private fun LocatedCard(location: LocationData) {
+private fun LocatedCard(location: LocationData, source: LocationSource) {
     val backdrop = WeatherBackdrop.forMood(WeatherMood.Clear, LocalDarkTheme.current)
-    val name = location.name ?: stringResource(R.string.location_current)
+    val name = location.name ?: stringResource(
+        if (source == LocationSource.Current) R.string.location_current else R.string.location_saved,
+    )
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -297,21 +399,26 @@ private fun Context.openSettings(action: String, withPackage: Boolean = false) {
     runCatching { startActivity(intent) }
 }
 
+private val previewLocation = SavedLocation(
+    LocationData(Coordinates(51.51, -0.13), "London"),
+    savedAt = Instant.now().minusSeconds(3 * 3600),
+)
+
 @Preview(showBackground = true)
 @Composable
 private fun PermissionPreview() {
     DailyWeatherTheme {
-        HomeScreen(LocationUiState.PermissionRequired(PermissionDenial.None), {}, {}, {}, {})
+        HomeScreen(LocationUiState(status = LocationStatus.PermissionRequired(PermissionDenial.None)), HomeActions())
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun LocatedPreview() {
+private fun SavedLocationPreview() {
     DailyWeatherTheme {
         HomeScreen(
-            LocationUiState.Located(LocationData(Coordinates(51.51, -0.13), "London")),
-            {}, {}, {}, {},
+            LocationUiState(previewLocation, LocationSource.Saved, LocationStatus.Failed(LocationFailure.Unavailable)),
+            HomeActions(),
         )
     }
 }
