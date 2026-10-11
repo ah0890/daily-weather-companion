@@ -193,4 +193,72 @@ class HomeViewModelWeatherTest {
 
         assertEquals(1, weather.requests.size)
     }
+
+    // --- Offline cache ---
+
+    @Test
+    fun `a fresh cached forecast is shown without any network request`() = runTest {
+        val weather = FakeWeatherRepository(success())
+        weather.cached = WeatherResult.Success(SampleForecasts.forecast(paris), clock.now.minusSeconds(10 * 60))
+        val vm = viewModel(weather)
+        advanceUntilIdle()
+
+        assertTrue(vm.weatherState.value is WeatherUiState.Loaded)
+        assertTrue(weather.requests.isEmpty())
+    }
+
+    @Test
+    fun `an old cached forecast is shown while a new one loads`() = runTest {
+        val weather = FakeWeatherRepository(success())
+        val cachedAt = clock.now.minus(HomeViewModel.WEATHER_REFRESH_AFTER.plusMinutes(5))
+        weather.cached = WeatherResult.Success(SampleForecasts.forecast(paris), cachedAt)
+        val vm = viewModel(weather)
+        advanceUntilIdle()
+
+        val state = vm.weatherState.value as WeatherUiState.Loaded
+        assertEquals(listOf(paris), weather.requests)
+        assertEquals(clock.now, state.fetchedAt)
+    }
+
+    @Test
+    fun `offline with a cached forecast shows it with the error`() = runTest {
+        val cachedAt = clock.now.minusSeconds(5 * 3600)
+        val weather = FakeWeatherRepository {
+            WeatherResult.Stale(SampleForecasts.forecast(it), cachedAt, WeatherError.NoConnection)
+        }
+        val vm = viewModel(weather)
+        advanceUntilIdle()
+
+        val state = vm.weatherState.value as WeatherUiState.Loaded
+        assertEquals(cachedAt, state.fetchedAt)
+        assertEquals(WeatherError.NoConnection, state.refreshError)
+    }
+
+    @Test
+    fun `pull to refresh ignores a fresh cache and downloads`() = runTest {
+        val weather = FakeWeatherRepository(success())
+        weather.cached = WeatherResult.Success(SampleForecasts.forecast(paris), clock.now)
+        val vm = viewModel(weather)
+        advanceUntilIdle()
+
+        vm.refreshWeather()
+        advanceUntilIdle()
+
+        assertEquals(1, weather.requests.size)
+    }
+
+    @Test
+    fun `a forecast from yesterday is moved forward to the current hour`() = runTest {
+        // Sample forecast starts 08:00 local on Oct 10 (London); the clock says 13:30 local the same day.
+        clock.now = Instant.parse("2026-10-10T12:30:00Z")
+        val weather = FakeWeatherRepository {
+            WeatherResult.Stale(SampleForecasts.forecast(it, hourlyRainChances = List(12) { 0 }), Instant.EPOCH, WeatherError.Timeout)
+        }
+        val vm = viewModel(weather)
+        advanceUntilIdle()
+
+        val forecast = (vm.weatherState.value as WeatherUiState.Loaded).forecast
+        assertEquals(13, forecast.current.time.hour)
+        assertEquals(13, forecast.upcomingHours().first().time.hour)
+    }
 }

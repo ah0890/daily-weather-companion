@@ -9,6 +9,7 @@ import com.ah0890.dailyweather.DailyWeatherApplication
 import com.ah0890.dailyweather.domain.model.Coordinates
 import com.ah0890.dailyweather.domain.model.LocationData
 import com.ah0890.dailyweather.domain.model.SavedLocation
+import com.ah0890.dailyweather.domain.model.WeatherForecast
 import com.ah0890.dailyweather.domain.model.WeatherResult
 import com.ah0890.dailyweather.domain.repository.LocationRepository
 import com.ah0890.dailyweather.domain.repository.WeatherRepository
@@ -30,6 +31,8 @@ import kotlinx.coroutines.launch
 import java.io.IOException
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
+import java.time.LocalDateTime
 
 /**
  * Drives the Today screen: which location to show, and the forecast for it.
@@ -80,36 +83,60 @@ class HomeViewModel(
                 .map { it.location?.location?.coordinates?.approximate() }
                 .filterNotNull()
                 .distinctUntilChanged()
-                .collect { loadWeather(it) }
+                .collect { loadWeather(it, useFreshCache = true) }
         }
     }
 
     /** Pull-to-refresh or retry. */
     fun refreshWeather() {
-        weatherCoordinates?.let { loadWeather(it) }
+        weatherCoordinates?.let { loadWeather(it, useFreshCache = false) }
     }
 
     /** Called when the screen becomes visible; refreshes only if the forecast is getting old. */
     fun refreshWeatherIfStale() {
         val loaded = weather.value as? WeatherUiState.Loaded ?: return
-        if (Duration.between(loaded.fetchedAt, clock.instant()) > WEATHER_REFRESH_AFTER) refreshWeather()
+        if (isOld(loaded.fetchedAt)) refreshWeather()
     }
 
-    private fun loadWeather(coordinates: Coordinates) {
+    /**
+     * @param useFreshCache when true, a cached forecast younger than [WEATHER_REFRESH_AFTER] is
+     *   shown without any network request.
+     */
+    private fun loadWeather(coordinates: Coordinates, useFreshCache: Boolean) {
         weatherJob?.cancel()
         // Keep showing the previous forecast while refreshing the same place.
-        val previous = (weather.value as? WeatherUiState.Loaded)?.takeIf { weatherCoordinates == coordinates }
+        var shown = (weather.value as? WeatherUiState.Loaded)?.takeIf { weatherCoordinates == coordinates }
         weatherCoordinates = coordinates
-        weather.value = previous?.copy(isRefreshing = true, refreshError = null) ?: WeatherUiState.Loading
+        weather.value = shown?.copy(isRefreshing = true, refreshError = null) ?: WeatherUiState.Loading
         weatherJob = viewModelScope.launch {
+            if (shown == null) {
+                // Show the offline copy straight away, then decide whether to refresh it.
+                weatherRepository.cachedForecast(coordinates)?.let { cached ->
+                    val fromCache = loaded(cached.forecast, cached.fetchedAt)
+                    shown = fromCache
+                    if (useFreshCache && !isOld(cached.fetchedAt)) {
+                        weather.value = fromCache
+                        return@launch
+                    }
+                    weather.value = fromCache.copy(isRefreshing = true)
+                }
+            }
             weather.value = when (val result = weatherRepository.getForecast(coordinates)) {
-                is WeatherResult.Success -> WeatherUiState.Loaded(result.forecast, result.fetchedAt)
+                is WeatherResult.Success -> loaded(result.forecast, result.fetchedAt)
+                is WeatherResult.Stale -> loaded(result.forecast, result.fetchedAt).copy(refreshError = result.error)
                 is WeatherResult.Failure ->
-                    previous?.copy(isRefreshing = false, refreshError = result.error)
-                        ?: WeatherUiState.Error(result.error)
+                    shown?.copy(isRefreshing = false, refreshError = result.error) ?: WeatherUiState.Error(result.error)
             }
         }
     }
+
+    /** Wraps a forecast for display, moved forward to the current time at its location. */
+    private fun loaded(forecast: WeatherForecast, fetchedAt: Instant): WeatherUiState.Loaded {
+        val localNow = LocalDateTime.ofInstant(clock.instant(), forecast.timeZone)
+        return WeatherUiState.Loaded(forecast.advancedTo(localNow), fetchedAt)
+    }
+
+    private fun isOld(fetchedAt: Instant) = Duration.between(fetchedAt, clock.instant()) > WEATHER_REFRESH_AFTER
 
     /** Called whenever the screen becomes visible, including after returning from Settings. */
     fun onPermissionChecked(granted: Boolean) {

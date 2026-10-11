@@ -23,11 +23,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -40,6 +38,7 @@ import com.ah0890.dailyweather.domain.usecase.RainAnalysis
 import com.ah0890.dailyweather.presentation.components.RelativeAge
 import com.ah0890.dailyweather.presentation.components.text
 import com.ah0890.dailyweather.presentation.weather.HourlyForecastRow
+import com.ah0890.dailyweather.presentation.weather.StaleForecastNotice
 import com.ah0890.dailyweather.presentation.weather.WeatherErrorCard
 import com.ah0890.dailyweather.presentation.weather.compassDirection
 import com.ah0890.dailyweather.presentation.weather.emoji
@@ -53,7 +52,6 @@ import com.ah0890.dailyweather.ui.theme.LocalDarkTheme
 import com.ah0890.dailyweather.ui.theme.WeatherBackdrop
 import com.ah0890.dailyweather.ui.theme.WeatherMood
 import java.time.Instant
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.roundToInt
@@ -76,7 +74,7 @@ fun CurrentWeatherSection(
         is WeatherUiState.Error -> WeatherErrorCard(state.error, onRetry)
         is WeatherUiState.Loaded -> {
             CurrentWeatherCard(state.forecast, state.fetchedAt)
-            if (state.refreshError != null) RefreshFailedNotice(state.fetchedAt)
+            StaleForecastNotice(state.fetchedAt, state.refreshError)
             val outlook = remember(state.forecast) { RainAnalysis.outlookForRestOfToday(state.forecast) }
             TodayOutlookCard(outlook, now = state.forecast.current.time)
             val commute = remember(state.forecast, commuteTimes) { CommuteAnalysis.summary(state.forecast, commuteTimes) }
@@ -238,26 +236,5 @@ private fun LoadingCard() {
                 color = backdrop.content,
             )
         }
-    }
-}
-
-@Composable
-private fun RefreshFailedNotice(fetchedAt: Instant) {
-    val time = remember(fetchedAt) {
-        fetchedAt.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
-    }
-    Card(
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics { liveRegion = LiveRegionMode.Polite },
-    ) {
-        Text(
-            text = stringResource(R.string.weather_refresh_failed, time),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(16.dp),
-        )
     }
 }

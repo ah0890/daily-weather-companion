@@ -11,8 +11,13 @@ class FakeWeatherRepository(
 ) : WeatherRepository {
     val requests = mutableListOf<Coordinates>()
 
+    /** What [cachedForecast] returns; nothing is cached by default. */
+    var cached: WeatherResult.Success? = null
+
     override suspend fun getForecast(coordinates: Coordinates): WeatherResult {
         requests += coordinates
         return result(coordinates)
     }
+
+    override suspend fun cachedForecast(coordinates: Coordinates): WeatherResult.Success? = cached
 }

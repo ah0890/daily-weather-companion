@@ -34,6 +34,7 @@ data class CurrentDto(
 data class HourlyDto(
     val time: List<String>? = null,
     @SerialName("temperature_2m") val temperature: List<Double?>? = null,
+    @SerialName("apparent_temperature") val apparentTemperature: List<Double?>? = null,
     @SerialName("precipitation_probability") val precipitationProbability: List<Int?>? = null,
     val precipitation: List<Double?>? = null,
     @SerialName("weather_code") val weatherCode: List<Int?>? = null,

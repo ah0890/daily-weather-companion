@@ -58,6 +58,7 @@ import com.ah0890.dailyweather.domain.model.HourlyForecast
 import com.ah0890.dailyweather.presentation.home.HomeViewModel
 import com.ah0890.dailyweather.presentation.home.WeatherUiState
 import com.ah0890.dailyweather.presentation.weather.HourlyForecastRow
+import com.ah0890.dailyweather.presentation.weather.StaleForecastNotice
 import com.ah0890.dailyweather.presentation.weather.WeatherErrorCard
 import com.ah0890.dailyweather.presentation.weather.emoji
 import com.ah0890.dailyweather.presentation.weather.formatPrecipitation
@@ -65,7 +66,6 @@ import com.ah0890.dailyweather.presentation.weather.formatTemperature
 import com.ah0890.dailyweather.presentation.weather.formatWindSpeed
 import com.ah0890.dailyweather.presentation.weather.labelRes
 import com.ah0890.dailyweather.presentation.weather.uvLevelRes
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
@@ -128,9 +128,7 @@ fun ForecastScreen(
                     val forecast = weather.forecast
                     val today = forecast.current.time.toLocalDate()
                     val span = TemperatureSpan.of(forecast.daily)
-                    if (weather.refreshError != null) {
-                        item(key = "refresh-failed") { RefreshFailed(weather) }
-                    }
+                    item(key = "stale") { StaleForecastNotice(weather.fetchedAt, weather.refreshError) }
                     items(forecast.daily, key = { it.date.toString() }) { day ->
                         val key = day.date.toString()
                         DayCard(
@@ -181,19 +179,6 @@ private fun Loading() {
             color = MaterialTheme.colorScheme.onSurface,
         )
     }
-}
-
-@Composable
-private fun RefreshFailed(state: WeatherUiState.Loaded) {
-    val time = remember(state.fetchedAt) {
-        state.fetchedAt.atZone(ZoneId.systemDefault())
-            .format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
-    }
-    Text(
-        text = stringResource(R.string.weather_refresh_failed, time),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
 }
 
 @Composable

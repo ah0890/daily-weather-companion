@@ -81,6 +81,7 @@ private fun HourlyDto.toDomain(): List<HourlyForecast> =
             precipitationMm = precipitation?.getOrNull(i),
             windSpeedKmh = windSpeed?.getOrNull(i),
             isDay = isDay?.getOrNull(i) != 0,
+            feelsLikeC = apparentTemperature?.getOrNull(i),
         )
     }
 

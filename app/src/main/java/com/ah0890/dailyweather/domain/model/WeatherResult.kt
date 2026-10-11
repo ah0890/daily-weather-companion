@@ -25,5 +25,10 @@ enum class WeatherError {
 
 sealed interface WeatherResult {
     data class Success(val forecast: WeatherForecast, val fetchedAt: Instant) : WeatherResult
+
+    /** Loading failed, but an earlier forecast for the same place was available offline. */
+    data class Stale(val forecast: WeatherForecast, val fetchedAt: Instant, val error: WeatherError) : WeatherResult
+
+    /** Loading failed and nothing was cached. */
     data class Failure(val error: WeatherError) : WeatherResult
 }

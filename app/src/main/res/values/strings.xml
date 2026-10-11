@@ -31,7 +31,13 @@
     <string name="weather_error_service">The weather service is temporarily unavailable.</string>
     <string name="weather_error_invalid">The weather service sent data the app couldn\'t read.</string>
     <string name="weather_error_unexpected">Something went wrong while loading the weather.</string>
-    <string name="weather_refresh_failed">Weather couldn\'t be updated. Showing the forecast from %1$s.</string>
+    <string name="weather_refresh_failed">Weather couldn\'t be updated. Showing the last available forecast.</string>
+    <string name="weather_may_be_outdated">This forecast may be out of date.</string>
+    <string name="last_updated">Last updated: %1$s</string>
+    <string name="last_updated_today">Today, %1$s</string>
+    <string name="last_updated_yesterday">Yesterday, %1$s</string>
+    <!-- e.g. "9 Oct, 6:45 AM" -->
+    <string name="last_updated_date">%1$s, %2$s</string>
 
     <!-- Today's outlook -->
     <string name="outlook_title">Today\'s outlook</string>

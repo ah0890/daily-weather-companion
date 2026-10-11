@@ -65,4 +65,35 @@ class WeatherForecastTest {
         assertEquals(listOf(22, 23), forecast.hoursOn(start.toLocalDate()).map { it.time.hour })
         assertEquals(listOf(0, 1, 2), forecast.hoursOn(start.toLocalDate().plusDays(1)).map { it.time.hour })
     }
+
+    @Test
+    fun `a fresh forecast is not changed when advanced`() {
+        val forecast = SampleForecasts.forecast()
+
+        assertEquals(forecast, forecast.advancedTo(forecast.current.time.plusMinutes(40)))
+    }
+
+    @Test
+    fun `an old forecast takes current conditions from the hourly entry for now`() {
+        val start = LocalDateTime.of(2026, 10, 10, 8, 0)
+        val forecast = SampleForecasts.forecast(start = start, hourlyRainChances = listOf(10, 20, 60, 80))
+            .let { f -> f.copy(hourly = f.hourly.map { it.copy(feelsLikeC = it.temperatureC - 2) }) }
+        val now = start.plusHours(2).plusMinutes(20)
+
+        val advanced = forecast.advancedTo(now)
+
+        assertEquals(now, advanced.current.time)
+        assertEquals(WeatherCondition.Rain, advanced.current.condition)
+        assertEquals(14.0, advanced.current.temperatureC, 0.0)
+        assertEquals(12.0, advanced.current.feelsLikeC, 0.0)
+        assertNull("not in hourly data", advanced.current.humidityPercent)
+        assertEquals(listOf(10, 11), advanced.upcomingHours().map { it.time.hour })
+    }
+
+    @Test
+    fun `beyond the hourly data the forecast is left as is`() {
+        val forecast = SampleForecasts.forecast()
+
+        assertEquals(forecast, forecast.advancedTo(forecast.current.time.plusDays(30)))
+    }
 }

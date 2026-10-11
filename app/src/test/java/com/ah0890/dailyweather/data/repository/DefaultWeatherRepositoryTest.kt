@@ -37,7 +37,7 @@ class DefaultWeatherRepositoryTest {
     }
 
     private suspend fun resultWhenRemoteThrows(error: Exception): WeatherResult =
-        DefaultWeatherRepository(FakeRemote { throw error }, clock).getForecast(SampleForecasts.london)
+        DefaultWeatherRepository(FakeRemote { throw error }, clock = clock).getForecast(SampleForecasts.london)
 
     private fun httpError(code: Int) = HttpException(Response.error<Any>(code, "".toResponseBody()))
 
@@ -46,7 +46,7 @@ class DefaultWeatherRepositoryTest {
         val forecast = SampleForecasts.forecast()
         val remote = FakeRemote { forecast }
 
-        val result = DefaultWeatherRepository(remote, clock).getForecast(SampleForecasts.london)
+        val result = DefaultWeatherRepository(remote, clock = clock).getForecast(SampleForecasts.london)
 
         assertEquals(WeatherResult.Success(forecast, fetchedAt = now), result)
         assertEquals(SampleForecasts.london, remote.requested)

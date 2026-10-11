@@ -27,7 +27,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | "Today's outlook": rain timing and umbrella recommendation | ✅ Done |
 | "Plan your day": morning/evening commute summary | ✅ Done |
 | 7-day forecast with expandable day details and hour-by-hour rain | ✅ Done |
-| Offline cache of the last successful forecast | Planned |
+| Offline cache of the last forecast with "last updated" notice | ✅ Done |
 | Daily ~7:00 AM weather notification | Planned |
 | Settings: notification time, units, theme, location | Planned |
 
@@ -41,7 +41,7 @@ _Screenshots will be added once the main screens are implemented._
 - **Navigation Compose** with type-safe (serializable) routes
 - **Kotlin Coroutines / Flow** for asynchronous work and observable state
 - **Retrofit/OkHttp + kotlinx.serialization** for networking
-- **DataStore** for the saved location; **Room** for the forecast cache _(upcoming)_
+- **DataStore** for the saved location; a JSON file (kotlinx.serialization) for the forecast cache
 - **WorkManager** for the daily notification _(upcoming)_
 - **Gradle Kotlin DSL** with a version catalog (`gradle/libs.versions.toml`)
 
@@ -74,7 +74,7 @@ Package layout (`com.ah0890.dailyweather`):
 ```text
 presentation/   Compose screens and ViewModels (home, forecast, settings, navigation, components)
 domain/         Pure Kotlin models and repository interfaces (use cases upcoming)
-data/           Open-Meteo API client, weather repository and saved-location storage
+data/           Open-Meteo API client, weather repository, offline forecast cache and saved-location storage
 location/       One-shot location lookup and place-name resolution
 notifications/  Daily notification scheduling and content                    (upcoming)
 ui/theme/       Colours, typography, shapes and weather backdrops
@@ -110,6 +110,16 @@ Rain advice is computed from Open-Meteo's **hourly precipitation probability** (
 **Commute ("Plan your day")** looks at the departure hour and the hour after it for the morning (default 8:00) and evening (default 17:00) trips, using the same rain thresholds, plus a warning for sustained wind ≥ 39 km/h — relevant when riding a motorcycle. After the evening trip, tomorrow's commute is shown.
 
 The wording is deliberately non-absolute ("recommended", "consider", "probably not needed"). The logic lives in `domain/usecase/RainAnalysis.kt` and `CommuteAnalysis.kt` and is unit-tested.
+
+## Offline Behaviour
+
+The most recent successful forecast is saved in a small JSON file in app-private storage (`files/weather_cache.json`). A single record doesn't justify a database, so Room is not used; writes go to a temporary file that is atomically moved into place.
+
+- On launch the cached forecast is shown instantly. If it is less than 30 minutes old, **no network request is made**.
+- If the network or the API fails, the cached forecast is shown with *"Weather couldn't be updated. Showing the last available forecast."* and *"Last updated: Today, 6:45 AM"*.
+- A forecast older than an hour is marked *"This forecast may be out of date."*
+- When the app is opened hours or days later, "now", the hourly timeline, today's outlook and the commute are moved forward to the real current time using the cached hourly data, so past hours never appear as upcoming.
+- The cache belongs to one location (~1 km cell); a different location never shows another place's weather. Like all app data it is excluded from backups.
 
 ## Location Permissions
 
