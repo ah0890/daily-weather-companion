@@ -26,6 +26,9 @@ data class WeatherForecast(
         val thisHour = current.time.truncatedTo(ChronoUnit.HOURS)
         return hourly.filter { !it.time.isBefore(thisHour) }.take(count)
     }
+
+    /** All hourly entries that fall on [date] (location-local). */
+    fun hoursOn(date: LocalDate): List<HourlyForecast> = hourly.filter { it.time.toLocalDate() == date }
 }
 
 data class CurrentWeather(

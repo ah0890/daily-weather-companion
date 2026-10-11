@@ -1,4 +1,4 @@
-package com.ah0890.dailyweather.presentation.home
+package com.ah0890.dailyweather.presentation.weather
 
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
@@ -36,29 +36,30 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.HourlyForecast
-import com.ah0890.dailyweather.presentation.weather.emoji
-import com.ah0890.dailyweather.presentation.weather.formatPrecipitation
-import com.ah0890.dailyweather.presentation.weather.formatTemperature
-import com.ah0890.dailyweather.presentation.weather.formatWindSpeed
-import com.ah0890.dailyweather.presentation.weather.labelRes
 import java.time.format.DateTimeFormatter
 
 /** Rain chance at or above which an hour is highlighted. */
 private const val NOTABLE_RAIN_CHANCE = 50
 
 /**
- * Horizontally scrolling timeline of the next hours, focused on rain chance.
+ * Horizontally scrolling timeline of hours, focused on rain chance.
  *
  * @param edgePadding the parent's horizontal padding; the row scrolls under it to the screen edge.
+ * @param firstIsNow label the first entry "Now" instead of its time.
  */
 @Composable
-fun HourlyForecastRow(hours: List<HourlyForecast>, edgePadding: Dp) {
+fun HourlyForecastRow(
+    hours: List<HourlyForecast>,
+    title: String,
+    edgePadding: Dp,
+    firstIsNow: Boolean = false,
+) {
     if (hours.isEmpty()) return
     val hourFormatter = rememberHourFormatter()
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            text = stringResource(R.string.hourly_title),
+            text = title,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.semantics { heading() },
@@ -70,7 +71,11 @@ fun HourlyForecastRow(hours: List<HourlyForecast>, edgePadding: Dp) {
             modifier = Modifier.bleed(edgePadding),
         ) {
             items(hours, key = { it.time }) { hour ->
-                val label = if (hour == hours.first()) stringResource(R.string.hourly_now) else hour.time.format(hourFormatter)
+                val label = if (firstIsNow && hour == hours.first()) {
+                    stringResource(R.string.hourly_now)
+                } else {
+                    hour.time.format(hourFormatter)
+                }
                 HourCell(hour, label)
             }
         }

@@ -56,4 +56,13 @@ class WeatherForecastTest {
 
         assertEquals(emptyList<HourlyForecast>(), forecast.upcomingHours())
     }
+
+    @Test
+    fun `hours on a date only include that local day`() {
+        val start = LocalDateTime.of(2026, 10, 10, 22, 0)
+        val forecast = SampleForecasts.forecast(start = start, hourlyRainChances = List(5) { 10 })
+
+        assertEquals(listOf(22, 23), forecast.hoursOn(start.toLocalDate()).map { it.time.hour })
+        assertEquals(listOf(0, 1, 2), forecast.hoursOn(start.toLocalDate().plusDays(1)).map { it.time.hour })
+    }
 }

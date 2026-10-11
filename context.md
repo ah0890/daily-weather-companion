@@ -1,7 +1,7 @@
 # Project Context — Daily Weather Companion
 
 Quick-start context for continuing development. Read this first; open source files only when needed.
-Last updated: 2026-10-11 (after the hourly-forecast milestone).
+Last updated: 2026-10-11 (after the 7-day forecast milestone).
 
 ## 1. What this is
 
@@ -59,6 +59,7 @@ Not used on purpose: Hilt (manual DI), Play Services location (framework `Locati
 UI (Compose) → ViewModel (StateFlow) → Repository interface (domain) → data sources (remote / local)
 ```
 
+`HomeViewModel` is created once in `DailyWeatherApp` (activity scope) and shared by Today and 7 days.
 Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons). ViewModels use `viewModelFactory { initializer { … APPLICATION_KEY … } }`.
 
 | Path (`app/src/main/java/com/ah0890/dailyweather/`) | Purpose |
@@ -71,13 +72,14 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 | `data/repository/DefaultWeatherRepository.kt` | Maps exceptions → `WeatherError` (NoConnection, Timeout, RateLimited, ServiceUnavailable, InvalidData, Unexpected); rethrows cancellation |
 | `data/local/DataStoreLocationRepository.kt` | Stores rounded lat/lon, name (≤100 chars), saved time; corrupt → null |
 | `location/` | `AndroidLocationProvider` (one-shot fix: fused/network 10 s → GPS 20 s on API 31+ → last-known ≤3 h), `GeocoderPlaceNameResolver` (rounded coords, 10 s timeout) |
-| `presentation/home/` | `HomeRoute` (permission launcher, resume check, settings intents) + stateless `HomeScreen(state, weather, HomeActions)` in a `PullToRefreshBox`; `HomeViewModel` (location + weather); `LocationUiState(location, source Saved/Current, status)`; `WeatherUiState` (Idle/Loading/Loaded(+isRefreshing, refreshError)/Error); `CurrentWeatherSection` (hero card, details grid, loading/error/refresh-failed); `HourlyForecastRow` (next 24 h LazyRow, rain bar, ≥50% highlighted, bleeds to screen edge) |
+| `presentation/home/` | `HomeRoute` (permission launcher, resume check, settings intents) + stateless `HomeScreen(state, weather, HomeActions)` in a `PullToRefreshBox`; `HomeViewModel` (location + weather); `LocationUiState(location, source Saved/Current, status)`; `WeatherUiState` (Idle/Loading/Loaded(+isRefreshing, refreshError)/Error); `CurrentWeatherSection` (hero card, details grid, loading/error/refresh-failed); now in `presentation/weather/` |
 | `presentation/components/` | `PlaceholderScreen`, `RelativeAge` ("updated 3 hours ago") |
-| `presentation/weather/` | `ConditionUi` (condition → `WeatherMood`, emoji, label) and `WeatherFormatting` (°, km/h, compass, visibility, UV band) |
-| `presentation/forecast/`, `presentation/settings/` | Placeholders for now |
+| `presentation/weather/` | Shared weather UI: `ConditionUi` (condition → `WeatherMood`, emoji, label), `WeatherFormatting` (°, km/h, mm, compass, visibility, UV band), `HourlyForecastRow` (LazyRow, rain bar, ≥50% highlighted, bleeds to edge), `WeatherErrorCard` |
+| `presentation/forecast/` | `ForecastRoute`/`ForecastScreen`: LazyColumn of `DayCard`s (Today/Tomorrow/weekday, rain %, low–high `RangeBar` vs week span), tap to expand `DayDetails` + that day's `HourlyForecastRow`; `DayLabel`, `TemperatureSpan` |
+| `presentation/settings/` | Placeholder for now |
 | `ui/theme/` | Custom light/dark colours, typography, shapes; `WeatherBackdrop.forMood(WeatherMood, dark)` pastel/deep gradients with high-contrast content colour; `LocalDarkTheme` |
 
-Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVM — use in-memory for multi-write tests). JSON fixture: `test/resources/openmeteo/forecast_sample.json`. Currently **94 tests**, all passing; lint clean.
+Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVM — use in-memory for multi-write tests). JSON fixture: `test/resources/openmeteo/forecast_sample.json`. Currently **104 tests**, all passing; lint clean.
 
 ## 6. Key behaviour & decisions
 
@@ -98,11 +100,11 @@ Done (commit):
 4. Location permission flow + one-shot lookup (`ca2215a`)
 5. Saved location + manual update (`5807709`)
 6. Current weather on Today screen (`a7eeeb5`)
-7. Hourly forecast timeline
+7. Hourly forecast timeline (`1fa4209`)
+8. 7-day forecast + day details
 
 Next (in order, adapt if needed):
 
-8. 7-day forecast screen + day details
 9. Rain timing + umbrella recommendation (wording: "recommended / consider / probably not needed")
 10. Daily commute summary (morning/evening)
 11. Offline cache (Room or DataStore) + "Last updated" / stale banner

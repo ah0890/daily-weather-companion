@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -17,8 +18,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.ah0890.dailyweather.presentation.forecast.ForecastScreen
+import com.ah0890.dailyweather.presentation.forecast.ForecastRoute
 import com.ah0890.dailyweather.presentation.home.HomeRoute
+import com.ah0890.dailyweather.presentation.home.HomeViewModel
 import com.ah0890.dailyweather.presentation.settings.SettingsScreen
 
 @Composable
@@ -26,6 +28,9 @@ fun DailyWeatherApp() {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
+
+    // Created here (activity scope) so Today and 7 days share one location + forecast state.
+    val weatherViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)
 
     Scaffold(
         bottomBar = {
@@ -57,8 +62,8 @@ fun DailyWeatherApp() {
             startDestination = TodayRoute,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable<TodayRoute> { HomeRoute() }
-            composable<ForecastRoute> { ForecastScreen() }
+            composable<TodayRoute> { HomeRoute(weatherViewModel) }
+            composable<ForecastRoute> { ForecastRoute(weatherViewModel) }
             composable<SettingsRoute> { SettingsScreen() }
         }
     }

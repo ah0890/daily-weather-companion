@@ -107,7 +107,20 @@
     <string name="location_unavailable_body">This can happen indoors or without a network connection. Please try again in a moment.</string>
 
     <string name="forecast_title">Next 7 days</string>
-    <string name="forecast_empty">The week ahead will appear here once weather data is available.</string>
+    <string name="forecast_empty">Set a location on the Today tab to see the week ahead.</string>
+    <string name="forecast_loading">Loading the week ahead…</string>
+    <string name="forecast_today">Today</string>
+    <string name="forecast_tomorrow">Tomorrow</string>
+    <string name="forecast_show_details">Show details</string>
+    <string name="forecast_hide_details">Hide details</string>
+    <string name="forecast_expanded">Expanded</string>
+    <string name="forecast_collapsed">Collapsed</string>
+    <string name="forecast_condition">Conditions</string>
+    <string name="forecast_rain_chance">Rain chance</string>
+    <string name="forecast_rain_amount">Rain amount</string>
+    <string name="forecast_max_wind">Max wind</string>
+    <string name="forecast_max_uv">Max UV</string>
+    <string name="forecast_hour_by_hour">Hour by hour</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_empty">Notifications, units, theme and location preferences will be configurable here.</string>

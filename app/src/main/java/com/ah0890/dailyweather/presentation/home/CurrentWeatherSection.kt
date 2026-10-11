@@ -12,13 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,10 +33,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ah0890.dailyweather.R
-import com.ah0890.dailyweather.domain.model.WeatherError
 import com.ah0890.dailyweather.domain.model.WeatherForecast
 import com.ah0890.dailyweather.presentation.components.RelativeAge
 import com.ah0890.dailyweather.presentation.components.text
+import com.ah0890.dailyweather.presentation.weather.HourlyForecastRow
+import com.ah0890.dailyweather.presentation.weather.WeatherErrorCard
 import com.ah0890.dailyweather.presentation.weather.compassDirection
 import com.ah0890.dailyweather.presentation.weather.emoji
 import com.ah0890.dailyweather.presentation.weather.formatTemperature
@@ -68,11 +65,16 @@ fun CurrentWeatherSection(state: WeatherUiState, edgePadding: Dp, onRetry: () ->
     when (state) {
         WeatherUiState.Idle -> Unit
         WeatherUiState.Loading -> LoadingCard()
-        is WeatherUiState.Error -> ErrorCard(state.error, onRetry)
+        is WeatherUiState.Error -> WeatherErrorCard(state.error, onRetry)
         is WeatherUiState.Loaded -> {
             CurrentWeatherCard(state.forecast, state.fetchedAt)
             if (state.refreshError != null) RefreshFailedNotice(state.fetchedAt)
-            HourlyForecastRow(state.forecast.upcomingHours(), edgePadding = edgePadding)
+            HourlyForecastRow(
+                hours = state.forecast.upcomingHours(),
+                title = stringResource(R.string.hourly_title),
+                edgePadding = edgePadding,
+                firstIsNow = true,
+            )
             WeatherDetails(state.forecast)
         }
     }
@@ -228,39 +230,6 @@ private fun LoadingCard() {
 }
 
 @Composable
-private fun ErrorCard(error: WeatherError, onRetry: () -> Unit) {
-    Card(
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-        modifier = Modifier
-            .fillMaxWidth()
-            .semantics { liveRegion = LiveRegionMode.Polite },
-    ) {
-        Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(
-                imageVector = Icons.Rounded.Warning,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(32.dp),
-            )
-            Text(
-                text = stringResource(R.string.weather_error_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.semantics { heading() },
-            )
-            Text(
-                text = stringResource(error.messageRes),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(8.dp))
-            Button(onClick = onRetry) { Text(stringResource(R.string.weather_retry)) }
-        }
-    }
-}
-
-@Composable
 private fun RefreshFailedNotice(fetchedAt: Instant) {
     val time = remember(fetchedAt) {
         fetchedAt.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
@@ -280,14 +249,3 @@ private fun RefreshFailedNotice(fetchedAt: Instant) {
         )
     }
 }
-
-@get:StringRes
-private val WeatherError.messageRes: Int
-    get() = when (this) {
-        WeatherError.NoConnection -> R.string.weather_error_no_connection
-        WeatherError.Timeout -> R.string.weather_error_timeout
-        WeatherError.RateLimited -> R.string.weather_error_rate_limited
-        WeatherError.ServiceUnavailable -> R.string.weather_error_service
-        WeatherError.InvalidData -> R.string.weather_error_invalid
-        WeatherError.Unexpected -> R.string.weather_error_unexpected
-    }

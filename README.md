@@ -26,7 +26,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | Hourly forecast timeline (next 24 h, rain chance, amount, wind) | ✅ Done |
 | Rain timing and umbrella recommendation | Planned |
 | Morning/evening commute summary | Planned |
-| 7-day forecast with day details | Planned |
+| 7-day forecast with expandable day details and hour-by-hour rain | ✅ Done |
 | Offline cache of the last successful forecast | Planned |
 | Daily ~7:00 AM weather notification | Planned |
 | Settings: notification time, units, theme, location | Planned |

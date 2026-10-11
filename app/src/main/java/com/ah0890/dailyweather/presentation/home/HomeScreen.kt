@@ -52,7 +52,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.Coordinates
 import com.ah0890.dailyweather.domain.model.LocationData
@@ -68,7 +67,7 @@ private val ScreenPadding = 20.dp
 
 /** Stateful entry point: wires the ViewModel, the permission dialog and system settings. */
 @Composable
-fun HomeRoute(viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)) {
+fun HomeRoute(viewModel: HomeViewModel) {
     val state by viewModel.locationState.collectAsStateWithLifecycle()
     val weather by viewModel.weatherState.collectAsStateWithLifecycle()
     val context = LocalContext.current
