@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.IOException
 import java.time.LocalTime
 
 class SettingsViewModel(
@@ -54,7 +55,13 @@ class SettingsViewModel(
     fun dismissNotificationPrompt() = launch { repository.setNotificationPromptDismissed() }
 
     private fun launch(block: suspend () -> Unit) {
-        viewModelScope.launch { block() }
+        viewModelScope.launch {
+            try {
+                block()
+            } catch (_: IOException) {
+                // Storage problem: the previous value stays in effect and the UI keeps showing it.
+            }
+        }
     }
 
     companion object {

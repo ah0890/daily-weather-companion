@@ -1,6 +1,12 @@
 package com.ah0890.dailyweather.presentation.home
 
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ah0890.dailyweather.R
+import com.ah0890.dailyweather.domain.model.CommuteTimes
 import com.ah0890.dailyweather.domain.model.WeatherForecast
 import com.ah0890.dailyweather.domain.usecase.CommuteAnalysis
 import com.ah0890.dailyweather.domain.usecase.RainAnalysis
@@ -69,6 +76,25 @@ fun CurrentWeatherSection(
     onRetry: () -> Unit,
 ) {
     val commuteTimes = LocalUserPreferences.current.commuteTimes
+    // Fade between loading, error and loaded; refreshes within "loaded" update in place.
+    AnimatedContent(
+        targetState = state,
+        contentKey = { it::class },
+        transitionSpec = {
+            (fadeIn(tween(220)) togetherWith fadeOut(tween(220)))
+                // Don't clip: the hourly row deliberately extends to the screen edges.
+                .using(SizeTransform(clip = false))
+        },
+        label = "weather",
+    ) { shown ->
+        Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            WeatherContent(shown, edgePadding, onRetry, commuteTimes)
+        }
+    }
+}
+
+@Composable
+private fun WeatherContent(state: WeatherUiState, edgePadding: Dp, onRetry: () -> Unit, commuteTimes: CommuteTimes) {
     when (state) {
         WeatherUiState.Idle -> Unit
         WeatherUiState.Loading -> LoadingCard()

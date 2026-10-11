@@ -5,6 +5,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.ah0890.dailyweather.DailyWeatherApplication
 import kotlinx.coroutines.flow.first
+import kotlin.coroutines.cancellation.CancellationException
 
 /** WorkManager entry point for the morning summary; the logic lives in [DailySummaryWork]. */
 class DailyWeatherWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -22,9 +23,15 @@ class DailyWeatherWorker(context: Context, params: WorkerParameters) : Coroutine
         if (outcome == DailySummaryWork.Outcome.Retry) return Result.retry()
 
         // Queue tomorrow's run. Never return failure: that would also fail the queued run.
-        val prefs = container.preferencesRepository.preferences.first()
-        if (prefs.dailyNotificationEnabled) {
-            container.notificationScheduler.schedule(prefs.dailyNotificationTime, NotificationScheduler.Policy.AfterCurrent)
+        try {
+            val prefs = container.preferencesRepository.preferences.first()
+            if (prefs.dailyNotificationEnabled) {
+                container.notificationScheduler.schedule(prefs.dailyNotificationTime, NotificationScheduler.Policy.AfterCurrent)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // Opening the app re-schedules the summary, so this is recoverable.
         }
         return Result.success()
     }

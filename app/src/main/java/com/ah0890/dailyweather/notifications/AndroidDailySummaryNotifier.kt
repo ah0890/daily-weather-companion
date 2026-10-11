@@ -70,7 +70,11 @@ class AndroidDailySummaryNotifier(private val context: Context) : DailySummaryNo
             .setAutoCancel(true)
             .build()
 
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        try {
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        } catch (_: SecurityException) {
+            // Notifications were blocked after canNotify() was checked; nothing to show.
+        }
     }
 
     private fun rainText(rain: RainSummary): String {

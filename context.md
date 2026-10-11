@@ -1,7 +1,7 @@
 # Project Context — Daily Weather Companion
 
 Quick-start context for continuing development. Read this first; open source files only when needed.
-Last updated: 2026-10-11 (after the accessibility pass).
+Last updated: 2026-10-11 (after the error-handling pass).
 
 ## 1. What this is
 
@@ -86,7 +86,7 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 | `presentation/components/` (more) | `LocalUserPreferences` (provided in `MainActivity`; use `temperatureText()` not `formatTemperature()` in UI), `SystemIntents` (`LOCATION_PERMISSION`, `hasLocationPermission`, `openSettings`, `openUrl`) |
 | `ui/theme/` | Custom light/dark colours, typography, shapes; `WeatherBackdrop.forMood(WeatherMood, dark)` pastel/deep gradients with high-contrast content colour; `LocalDarkTheme` |
 
-Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVM — use in-memory for multi-write tests). JSON fixture: `test/resources/openmeteo/forecast_sample.json`. Currently **189 tests**, all passing; lint clean.
+Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVM — use in-memory for multi-write tests). JSON fixture: `test/resources/openmeteo/forecast_sample.json`. Currently **191 tests**, all passing; lint clean.
 
 ## 6. Key behaviour & decisions
 
@@ -115,11 +115,12 @@ Done (commit):
 11. Offline cache + "last updated" (`600339d`)
 12. Settings (units, theme, commute times, privacy, about) (`cca313c`)
 13. Daily morning notification (`34839dd`)
-14. Accessibility pass (large-text min widths, dark-mode `cardContainer`)
+14. Accessibility pass (`a3ed22c`, `0e3a14e`)
+15. Error-handling polish (job never fails/always reschedules, SecurityException on notify, NaN coords, geocoder, settings IO) + weather crossfade
 
 Next (in order, adapt if needed):
 
-15. Error-handling/UI polish, docs, final QA + 1.0.0
+16. Docs + final QA + 1.0.0
 
 ## 8. Open items / notes
 

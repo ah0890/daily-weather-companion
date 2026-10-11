@@ -39,8 +39,10 @@ class AndroidLocationProvider(private val context: Context) : LocationProvider {
             withTimeoutOrNull(timeoutFor(provider)) { requestFix(manager, provider) }
         } ?: recentLastKnown(manager, providers)
 
+        // Some devices report NaN or out-of-range values; treat those as no fix.
         return location
-            ?.let { LocationResult.Success(Coordinates(it.latitude, it.longitude)) }
+            ?.let { runCatching { Coordinates(it.latitude, it.longitude) }.getOrNull() }
+            ?.let { LocationResult.Success(it) }
             ?: LocationResult.Unavailable
     }
 

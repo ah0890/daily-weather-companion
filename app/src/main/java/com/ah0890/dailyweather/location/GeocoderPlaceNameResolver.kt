@@ -9,8 +9,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import java.io.IOException
 import java.util.Locale
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.resume
 import kotlin.time.Duration.Companion.seconds
 
@@ -50,9 +50,10 @@ class GeocoderPlaceNameResolver(private val context: Context) : PlaceNameResolve
                     geocoder.getFromLocation(coordinates.latitude, coordinates.longitude, 1)?.firstOrNull()
                 }
             }
-        } catch (_: IOException) {
-            null
-        } catch (_: IllegalArgumentException) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            // IOException (no network/backend), IllegalArgumentException, or vendor-specific errors.
             null
         }
 

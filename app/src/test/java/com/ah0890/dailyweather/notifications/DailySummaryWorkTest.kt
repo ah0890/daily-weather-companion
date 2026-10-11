@@ -154,4 +154,11 @@ class DailySummaryWorkTest {
 
         assertEquals(Outcome.Retry, work(weather).run(attempt = 0))
     }
+
+    @Test
+    fun `an unexpected error skips the day instead of failing the job`() = runTest {
+        val weather = FakeWeatherRepository { error("bug in a repository") }
+
+        assertEquals(Outcome.Skipped(SkipReason.Error), work(weather).run(attempt = 0))
+    }
 }

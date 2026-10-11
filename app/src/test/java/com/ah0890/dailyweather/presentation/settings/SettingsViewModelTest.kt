@@ -3,6 +3,7 @@ package com.ah0890.dailyweather.presentation.settings
 import com.ah0890.dailyweather.data.local.DataStorePreferencesRepository
 import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.ThemeMode
+import com.ah0890.dailyweather.domain.repository.PreferencesRepository
 import com.ah0890.dailyweather.notifications.NotificationScheduler
 import com.ah0890.dailyweather.testing.InMemoryPreferencesDataStore
 import com.ah0890.dailyweather.testing.MainDispatcherRule
@@ -15,6 +16,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.io.IOException
 import java.time.LocalTime
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -99,5 +101,18 @@ class SettingsViewModelTest {
         advanceUntilIdle()
 
         assertTrue(repository.preferences.first().notificationPromptDismissed)
+    }
+
+    @Test
+    fun `a storage error while saving does not crash`() = runTest {
+        val failing = object : PreferencesRepository by repository {
+            override suspend fun setThemeMode(mode: ThemeMode) = throw IOException("disk full")
+        }
+        val vm = SettingsViewModel(failing, scheduler)
+
+        vm.setThemeMode(ThemeMode.Dark)
+        advanceUntilIdle()
+
+        assertEquals(ThemeMode.System, repository.preferences.first().themeMode)
     }
 }
