@@ -215,7 +215,12 @@ private fun LocationHeader(state: LocationUiState, onUpdateLocation: () -> Unit)
                 stringResource(R.string.location_updating)
             } else {
                 val age = RelativeAge.between(location.savedAt, Instant.now()).text()
-                stringResource(R.string.location_source_with_age, sourceLabel, age)
+                // Without a place name the source is already the title; don't repeat it.
+                if (location.location.name == null) {
+                    stringResource(R.string.weather_updated, age)
+                } else {
+                    stringResource(R.string.location_source_with_age, sourceLabel, age)
+                }
             }
             Text(
                 text = detail,
