@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ah0890.dailyweather.R
@@ -57,9 +58,13 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.roundToInt
 
-/** Everything weather-related below the location header. */
+/**
+ * Everything weather-related below the location header.
+ *
+ * @param edgePadding the screen's horizontal padding, so scrolling rows can reach the edges.
+ */
 @Composable
-fun CurrentWeatherSection(state: WeatherUiState, onRetry: () -> Unit) {
+fun CurrentWeatherSection(state: WeatherUiState, edgePadding: Dp, onRetry: () -> Unit) {
     when (state) {
         WeatherUiState.Idle -> Unit
         WeatherUiState.Loading -> LoadingCard()
@@ -67,6 +72,7 @@ fun CurrentWeatherSection(state: WeatherUiState, onRetry: () -> Unit) {
         is WeatherUiState.Loaded -> {
             CurrentWeatherCard(state.forecast, state.fetchedAt)
             if (state.refreshError != null) RefreshFailedNotice(state.fetchedAt)
+            HourlyForecastRow(state.forecast.upcomingHours(), edgePadding = edgePadding)
             WeatherDetails(state.forecast)
         }
     }

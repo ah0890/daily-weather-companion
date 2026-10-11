@@ -45,6 +45,14 @@ class WeatherFormattingTest {
     }
 
     @Test
+    fun `rain amounts use one decimal below ten millimetres`() {
+        val sep = decimalSeparator()
+        assertEquals("0${sep}4 mm", formatPrecipitation(0.42))
+        assertEquals("9${sep}9 mm", formatPrecipitation(9.94))
+        assertEquals("12 mm", formatPrecipitation(11.6))
+    }
+
+    @Test
     fun `uv index categories follow WHO bands`() {
         assertEquals(R.string.uv_low, uvLevelRes(0.0))
         assertEquals(R.string.uv_low, uvLevelRes(2.9))

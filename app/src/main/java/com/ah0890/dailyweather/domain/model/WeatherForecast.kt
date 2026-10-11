@@ -3,6 +3,7 @@ package com.ah0890.dailyweather.domain.model
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 // All values are metric (°C, km/h, mm, metres). Conversion to the user's preferred units
 // happens at display time so cached data stays unit-independent.
@@ -19,6 +20,12 @@ data class WeatherForecast(
     /** Today's summary at the forecast location, falling back to the first day available. */
     val today: DailyForecast?
         get() = daily.firstOrNull { it.date == current.time.toLocalDate() } ?: daily.firstOrNull()
+
+    /** Hourly entries starting with the current hour, at most [count] of them. */
+    fun upcomingHours(count: Int = 24): List<HourlyForecast> {
+        val thisHour = current.time.truncatedTo(ChronoUnit.HOURS)
+        return hourly.filter { !it.time.isBefore(thisHour) }.take(count)
+    }
 }
 
 data class CurrentWeather(

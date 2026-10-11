@@ -23,7 +23,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | Location permission flow and one-shot current location | ✅ Done |
 | Saved location with manual update | ✅ Done |
 | Current weather with details, pull-to-refresh and error states | ✅ Done |
-| Hourly forecast with rain probability timeline | Planned |
+| Hourly forecast timeline (next 24 h, rain chance, amount, wind) | ✅ Done |
 | Rain timing and umbrella recommendation | Planned |
 | Morning/evening commute summary | Planned |
 | 7-day forecast with day details | Planned |

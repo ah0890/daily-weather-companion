@@ -64,6 +64,7 @@ import java.time.Instant
 import java.time.LocalTime
 
 private const val LOCATION_PERMISSION = Manifest.permission.ACCESS_COARSE_LOCATION
+private val ScreenPadding = 20.dp
 
 /** Stateful entry point: wires the ViewModel, the permission dialog and system settings. */
 @Composable
@@ -134,7 +135,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 24.dp),
+                .padding(horizontal = ScreenPadding, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -150,7 +151,7 @@ fun HomeScreen(
             val location = state.location
             if (location != null) {
                 SavedLocationNotice(state.status, actions)
-                CurrentWeatherSection(weather, onRetry = actions.refreshWeather)
+                CurrentWeatherSection(weather, edgePadding = ScreenPadding, onRetry = actions.refreshWeather)
             } else {
                 NoLocationContent(state.status, actions)
             }

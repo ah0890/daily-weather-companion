@@ -1,7 +1,7 @@
 # Project Context — Daily Weather Companion
 
 Quick-start context for continuing development. Read this first; open source files only when needed.
-Last updated: 2026-10-11 (after the current-weather milestone).
+Last updated: 2026-10-11 (after the hourly-forecast milestone).
 
 ## 1. What this is
 
@@ -15,12 +15,12 @@ Design: calm, premium, readable in sunlight, light + dark. Not a data dump.
 
 ## 2. Working rules (must follow)
 
-- **Never run** `git add/commit/push/pull/merge/rebase/stash/reset/checkout/clean`. Never change git user config. Read-only git (`status`, `log`, `diff`, `branch`, `remote -v`) is fine.
-- **No AI attribution** anywhere (no `Co-Authored-By: Claude` in suggested commit messages).
-- One milestone at a time. After each: build → tests → lint → security/secret scan → `git status` → report → **stop and wait for the user to reply `DONE`**.
-- Report format: `MILESTONE COMPLETED` (Milestone, What I implemented, Files created/modified, Testing, Security check, Git status) → `YOUR MANUAL GIT STEPS` (explicit per-file `git add` grouped by purpose, exact conventional commit message, `git push origin main`) → `WAIT FOR ME`.
-- Before starting a milestone, check `git status`; if uncommitted work exists, stop and report.
+- Work one milestone at a time. After each: build → unit tests → lint → release build → secret scan → stage files **explicitly** → commit (conventional message) → `git push origin main` → continue with the next milestone. (Automatic commit/push requested by the owner on 2026-10-11; before that the owner ran Git manually.)
+- **No AI attribution** anywhere — no `Co-Authored-By` trailers. Never change git user config, never force-push or rewrite history, never stash/reset/clean.
+- Before starting a milestone, check `git status`; if unexpected uncommitted work exists, stop and report.
+- Keep the emulator **off** until the project is complete (owner's request) — verify with tests, lint and builds.
 - Never commit secrets; `local.properties` is git-ignored. Don't put real personal locations in tests (use London/Paris/Sydney).
+- Keep `README.md` and this file up to date in each milestone commit.
 
 ## 3. Environment (Windows 11, 8 GB RAM)
 
@@ -71,7 +71,7 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 | `data/repository/DefaultWeatherRepository.kt` | Maps exceptions → `WeatherError` (NoConnection, Timeout, RateLimited, ServiceUnavailable, InvalidData, Unexpected); rethrows cancellation |
 | `data/local/DataStoreLocationRepository.kt` | Stores rounded lat/lon, name (≤100 chars), saved time; corrupt → null |
 | `location/` | `AndroidLocationProvider` (one-shot fix: fused/network 10 s → GPS 20 s on API 31+ → last-known ≤3 h), `GeocoderPlaceNameResolver` (rounded coords, 10 s timeout) |
-| `presentation/home/` | `HomeRoute` (permission launcher, resume check, settings intents) + stateless `HomeScreen(state, weather, HomeActions)` in a `PullToRefreshBox`; `HomeViewModel` (location + weather); `LocationUiState(location, source Saved/Current, status)`; `WeatherUiState` (Idle/Loading/Loaded(+isRefreshing, refreshError)/Error); `CurrentWeatherSection` (hero card, details grid, loading/error/refresh-failed) |
+| `presentation/home/` | `HomeRoute` (permission launcher, resume check, settings intents) + stateless `HomeScreen(state, weather, HomeActions)` in a `PullToRefreshBox`; `HomeViewModel` (location + weather); `LocationUiState(location, source Saved/Current, status)`; `WeatherUiState` (Idle/Loading/Loaded(+isRefreshing, refreshError)/Error); `CurrentWeatherSection` (hero card, details grid, loading/error/refresh-failed); `HourlyForecastRow` (next 24 h LazyRow, rain bar, ≥50% highlighted, bleeds to screen edge) |
 | `presentation/components/` | `PlaceholderScreen`, `RelativeAge` ("updated 3 hours ago") |
 | `presentation/weather/` | `ConditionUi` (condition → `WeatherMood`, emoji, label) and `WeatherFormatting` (°, km/h, compass, visibility, UV band) |
 | `presentation/forecast/`, `presentation/settings/` | Placeholders for now |
@@ -97,11 +97,11 @@ Done (commit):
 3. Weather repository + error categorization (`11db3c0`)
 4. Location permission flow + one-shot lookup (`ca2215a`)
 5. Saved location + manual update (`5807709`)
-6. Current weather on Today screen (pending commit)
+6. Current weather on Today screen (`a7eeeb5`)
+7. Hourly forecast timeline
 
 Next (in order, adapt if needed):
 
-7. Hourly forecast timeline (rain % per hour)
 8. 7-day forecast screen + day details
 9. Rain timing + umbrella recommendation (wording: "recommended / consider / probably not needed")
 10. Daily commute summary (morning/evening)

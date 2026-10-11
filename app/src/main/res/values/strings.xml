@@ -33,6 +33,12 @@
     <string name="weather_error_unexpected">Something went wrong while loading the weather.</string>
     <string name="weather_refresh_failed">Weather couldn\'t be updated. Showing the forecast from %1$s.</string>
 
+    <!-- Hourly forecast -->
+    <string name="hourly_title">Next 24 hours</string>
+    <string name="hourly_now">Now</string>
+    <string name="hourly_rain_chance_description">%1$d%% chance of rain</string>
+    <string name="hourly_wind_description">wind %1$s</string>
+
     <string name="condition_clear">Clear</string>
     <string name="condition_mainly_clear">Mainly clear</string>
     <string name="condition_partly_cloudy">Partly cloudy</string>

@@ -20,6 +20,10 @@ fun compassDirection(degrees: Int): String {
     return points[((normalized + 22.5) / 45).toInt() % 8]
 }
 
+/** Rain amount: one decimal below 10 mm ("0.4 mm"), whole millimetres above ("12 mm"). */
+fun formatPrecipitation(mm: Double): String =
+    if (mm < 10) String.format(Locale.getDefault(), "%.1f mm", mm) else "${mm.roundToInt()} mm"
+
 /** Visibility in kilometres; anything from 10 km up is shown as "10+ km". */
 fun formatVisibility(meters: Double): String {
     val km = meters / 1000

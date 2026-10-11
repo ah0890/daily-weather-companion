@@ -29,4 +29,31 @@ class WeatherForecastTest {
     fun `today is null without daily data`() {
         assertNull(SampleForecasts.forecast().copy(daily = emptyList()).today)
     }
+
+    @Test
+    fun `upcoming hours start with the current hour`() {
+        val start = LocalDateTime.of(2026, 10, 10, 8, 0)
+        val forecast = SampleForecasts.forecast(start = start, hourlyRainChances = listOf(1, 2, 3, 4, 5))
+            .let { it.copy(current = it.current.copy(time = start.plusHours(2).plusMinutes(15))) }
+
+        val hours = forecast.upcomingHours()
+
+        assertEquals(listOf(10, 11, 12), hours.map { it.time.hour })
+    }
+
+    @Test
+    fun `upcoming hours are capped at the requested count`() {
+        val forecast = SampleForecasts.forecast(hourlyRainChances = List(48) { 10 })
+
+        assertEquals(24, forecast.upcomingHours().size)
+        assertEquals(6, forecast.upcomingHours(count = 6).size)
+    }
+
+    @Test
+    fun `no upcoming hours when the hourly data is all in the past`() {
+        val forecast = SampleForecasts.forecast(hourlyRainChances = listOf(10, 20))
+            .let { it.copy(current = it.current.copy(time = it.current.time.plusDays(1))) }
+
+        assertEquals(emptyList<HourlyForecast>(), forecast.upcomingHours())
+    }
 }
