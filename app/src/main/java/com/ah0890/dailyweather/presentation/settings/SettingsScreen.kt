@@ -1,5 +1,6 @@
 package com.ah0890.dailyweather.presentation.settings
 
+import android.Manifest
 import android.text.format.DateFormat
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -24,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -44,6 +47,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ah0890.dailyweather.BuildConfig
@@ -54,7 +58,10 @@ import com.ah0890.dailyweather.domain.model.ThemeMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.presentation.components.LOCATION_PERMISSION
 import com.ah0890.dailyweather.presentation.components.RelativeAge
+import com.ah0890.dailyweather.presentation.components.canPostNotifications
 import com.ah0890.dailyweather.presentation.components.hasLocationPermission
+import com.ah0890.dailyweather.presentation.components.needsNotificationPermission
+import com.ah0890.dailyweather.presentation.components.openNotificationSettings
 import com.ah0890.dailyweather.presentation.components.openUrl
 import com.ah0890.dailyweather.presentation.components.text
 import com.ah0890.dailyweather.presentation.home.HomeViewModel
@@ -87,9 +94,22 @@ fun SettingsRoute(
         onLocationUpdateRequested()
     }
 
+    // Re-checked on resume: notification access can be changed in system settings.
+    var notificationsAllowed by remember { mutableStateOf(context.canPostNotifications()) }
+    LifecycleResumeEffect(Unit) {
+        notificationsAllowed = context.canPostNotifications()
+        onPauseOrDispose { }
+    }
+    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        notificationsAllowed = context.canPostNotifications()
+        // Only switch on if notifications were actually allowed.
+        if (granted) settingsViewModel.setDailyNotificationEnabled(true)
+    }
+
     SettingsScreen(
         preferences = preferences,
         savedLocation = location.location,
+        notificationsAllowed = notificationsAllowed,
         actions = SettingsActions(
             updateLocation = {
                 if (context.hasLocationPermission()) {
@@ -99,6 +119,15 @@ fun SettingsRoute(
                     permissionLauncher.launch(LOCATION_PERMISSION)
                 }
             },
+            setNotificationsEnabled = { enabled ->
+                if (enabled && needsNotificationPermission && !context.canPostNotifications()) {
+                    notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    settingsViewModel.setDailyNotificationEnabled(enabled)
+                }
+            },
+            setNotificationTime = settingsViewModel::setDailyNotificationTime,
+            openNotificationSettings = { context.openNotificationSettings() },
             setMorningCommute = settingsViewModel::setMorningCommute,
             setEveningCommute = settingsViewModel::setEveningCommute,
             setTemperatureUnit = settingsViewModel::setTemperatureUnit,
@@ -111,6 +140,9 @@ fun SettingsRoute(
 
 class SettingsActions(
     val updateLocation: () -> Unit = {},
+    val setNotificationsEnabled: (Boolean) -> Unit = {},
+    val setNotificationTime: (LocalTime) -> Unit = {},
+    val openNotificationSettings: () -> Unit = {},
     val setMorningCommute: (LocalTime) -> Unit = {},
     val setEveningCommute: (LocalTime) -> Unit = {},
     val setTemperatureUnit: (TemperatureUnit) -> Unit = {},
@@ -123,6 +155,7 @@ class SettingsActions(
 fun SettingsScreen(
     preferences: UserPreferences,
     savedLocation: SavedLocation?,
+    notificationsAllowed: Boolean,
     actions: SettingsActions,
     modifier: Modifier = Modifier,
 ) {
@@ -171,6 +204,42 @@ fun SettingsScreen(
                     Text(stringResource(R.string.settings_location_update))
                 }
             }
+        }
+
+        Section(R.string.settings_section_notifications) {
+            SwitchRow(
+                title = stringResource(R.string.settings_notifications_switch),
+                summary = stringResource(R.string.settings_notifications_switch_summary),
+                checked = preferences.dailyNotificationEnabled,
+                onCheckedChange = actions.setNotificationsEnabled,
+            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            ClickableRow(
+                title = stringResource(R.string.settings_notifications_time),
+                value = preferences.dailyNotificationTime.format(timeFormatter),
+                onClick = { editing = "notification" },
+            )
+            if (preferences.dailyNotificationEnabled && !notificationsAllowed) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.settings_notifications_blocked),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    TextButton(onClick = actions.openNotificationSettings) {
+                        Text(stringResource(R.string.settings_notifications_open_settings))
+                    }
+                }
+            }
+            Text(
+                text = stringResource(R.string.settings_notifications_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+            )
         }
 
         Section(R.string.settings_section_commute) {
@@ -245,6 +314,11 @@ fun SettingsScreen(
             onConfirm = { actions.setMorningCommute(it); editing = null },
             onDismiss = { editing = null },
         )
+        "notification" -> TimeDialog(
+            initial = preferences.dailyNotificationTime,
+            onConfirm = { actions.setNotificationTime(it); editing = null },
+            onDismiss = { editing = null },
+        )
         "evening" -> TimeDialog(
             initial = preferences.commuteTimes.evening,
             onConfirm = { actions.setEveningCommute(it); editing = null },
@@ -282,6 +356,25 @@ private fun ClickableRow(title: String, value: String, onClick: () -> Unit) {
     ) {
         Text(text = title, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
         Text(text = value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun SwitchRow(title: String, summary: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+            Text(text = summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        // The whole row is the toggle; the switch only shows its state.
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 

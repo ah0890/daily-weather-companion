@@ -2,6 +2,7 @@ package com.ah0890.dailyweather.data.local
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -45,6 +46,18 @@ class DataStorePreferencesRepository(private val dataStore: DataStore<Preference
         dataStore.edit { it[Keys.EveningCommute] = time.toMinutes() }
     }
 
+    override suspend fun setDailyNotificationEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.NotificationEnabled] = enabled }
+    }
+
+    override suspend fun setDailyNotificationTime(time: LocalTime) {
+        dataStore.edit { it[Keys.NotificationTime] = time.toMinutes() }
+    }
+
+    override suspend fun setNotificationPromptDismissed() {
+        dataStore.edit { it[Keys.NotificationPromptDismissed] = true }
+    }
+
     private fun Preferences.toUserPreferences(): UserPreferences {
         val defaults = UserPreferences()
         return UserPreferences(
@@ -54,6 +67,9 @@ class DataStorePreferencesRepository(private val dataStore: DataStore<Preference
                 morning = this[Keys.MorningCommute]?.toTimeOrNull() ?: defaults.commuteTimes.morning,
                 evening = this[Keys.EveningCommute]?.toTimeOrNull() ?: defaults.commuteTimes.evening,
             ),
+            dailyNotificationEnabled = this[Keys.NotificationEnabled] ?: defaults.dailyNotificationEnabled,
+            dailyNotificationTime = this[Keys.NotificationTime]?.toTimeOrNull() ?: defaults.dailyNotificationTime,
+            notificationPromptDismissed = this[Keys.NotificationPromptDismissed] ?: defaults.notificationPromptDismissed,
         )
     }
 
@@ -70,5 +86,8 @@ class DataStorePreferencesRepository(private val dataStore: DataStore<Preference
         val ThemeMode = stringPreferencesKey("theme_mode")
         val MorningCommute = intPreferencesKey("commute_morning_minutes")
         val EveningCommute = intPreferencesKey("commute_evening_minutes")
+        val NotificationEnabled = booleanPreferencesKey("daily_notification_enabled")
+        val NotificationTime = intPreferencesKey("daily_notification_minutes")
+        val NotificationPromptDismissed = booleanPreferencesKey("notification_prompt_dismissed")
     }
 }

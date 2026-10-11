@@ -18,4 +18,10 @@ interface PreferencesRepository {
     suspend fun setMorningCommute(time: LocalTime)
 
     suspend fun setEveningCommute(time: LocalTime)
+
+    suspend fun setDailyNotificationEnabled(enabled: Boolean)
+
+    suspend fun setDailyNotificationTime(time: LocalTime)
+
+    suspend fun setNotificationPromptDismissed()
 }

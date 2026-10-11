@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Notification channel (shown in system settings) -->
+    <string name="notification_channel_name">Morning weather summary</string>
+    <string name="notification_channel_description">Today\'s weather, rain timing and umbrella advice once each morning.</string>
+
+    <!-- Notification content; the first argument is a weather emoji -->
+    <string name="notification_title_location">%1$s Today in %2$s</string>
+    <string name="notification_title">%1$s Today\'s weather</string>
+    <string name="notification_high_low">%1$s / %2$s</string>
+    <string name="notification_rain_chance">Rain chance %1$d%%</string>
+    <string name="notification_umbrella_recommended">☂️ Umbrella recommended</string>
+    <string name="notification_umbrella_consider">🌂 Consider taking an umbrella</string>
+    <string name="notification_umbrella_not_needed">Probably no umbrella needed</string>
+
+    <!-- Settings -->
+    <string name="settings_section_notifications">Morning summary</string>
+    <string name="settings_notifications_switch">Daily weather notification</string>
+    <string name="settings_notifications_switch_summary">Today\'s weather, rain timing and umbrella advice</string>
+    <string name="settings_notifications_time">Time</string>
+    <string name="settings_notifications_hint">Arrives at about this time. Android may delay it slightly to save battery. Uses your saved location.</string>
+    <string name="settings_notifications_blocked">Notifications are turned off for this app in system settings.</string>
+    <string name="settings_notifications_open_settings">Open notification settings</string>
+
+    <!-- One-time prompt on the Today screen -->
+    <string name="notification_prompt_title">Get a morning weather summary</string>
+    <string name="notification_prompt_body">A short notification at %1$s with today\'s temperatures, when rain is likely and whether to take an umbrella.</string>
+    <string name="notification_prompt_allow">Turn on</string>
+    <string name="notification_prompt_dismiss">Not now</string>
+</resources>

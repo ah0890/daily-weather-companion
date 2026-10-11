@@ -28,7 +28,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | "Plan your day": morning/evening commute summary | ✅ Done |
 | 7-day forecast with expandable day details and hour-by-hour rain | ✅ Done |
 | Offline cache of the last forecast with "last updated" notice | ✅ Done |
-| Daily ~7:00 AM weather notification | Planned |
+| Daily ~7:00 AM weather notification (WorkManager) | ✅ Done |
 | Settings: location, commute times, °C/°F, System/Light/Dark theme, privacy, about | ✅ Done |
 
 ## Screenshots
@@ -42,7 +42,7 @@ _Screenshots will be added once the main screens are implemented._
 - **Kotlin Coroutines / Flow** for asynchronous work and observable state
 - **Retrofit/OkHttp + kotlinx.serialization** for networking
 - **DataStore** for the saved location; a JSON file (kotlinx.serialization) for the forecast cache
-- **WorkManager** for the daily notification _(upcoming)_
+- **WorkManager** for the daily notification
 - **Gradle Kotlin DSL** with a version catalog (`gradle/libs.versions.toml`)
 
 | Tool | Version |
@@ -76,7 +76,7 @@ presentation/   Compose screens and ViewModels (home, forecast, settings, naviga
 domain/         Pure Kotlin models and repository interfaces (use cases upcoming)
 data/           Open-Meteo API client, weather repository, offline forecast cache and saved-location storage
 location/       One-shot location lookup and place-name resolution
-notifications/  Daily notification scheduling and content                    (upcoming)
+notifications/  Morning summary: scheduling rules, WorkManager job and notification
 ui/theme/       Colours, typography, shapes and weather backdrops
 ```
 
@@ -161,7 +161,20 @@ The **Privacy** page (Settings → Privacy) explains in plain language that the 
 
 ## Notification System
 
-_(Planned.)_ A daily morning summary (default ~7:00 AM) will be scheduled with **WorkManager**. Android does not guarantee exact timing for battery-friendly background work, so the notification is delivered _around_ the chosen time without requesting the exact-alarm permission.
+A short **morning summary** (default **7:00**, configurable in Settings) shows the day's condition, high/low, peak rain chance, when rain is likely and the umbrella advice, e.g.:
+
+> **🌦️ Today in London**
+> Rain · 16° / 9° · Rain chance 78%
+> Rain is most likely between 2 PM and 5 PM.
+> ☂️ Umbrella recommended
+
+How it is scheduled, and why:
+
+- **WorkManager one-time job that re-schedules itself** after each run. The delay is recomputed from the calendar every day, so the summary stays at the same wall-clock time across time-zone and daylight-saving changes (a fixed 24-hour periodic job would drift).
+- **No exact-alarm permission.** Android 12+ restricts exact alarms, and a daily summary doesn't need minute precision; Android may delay delivery slightly (Doze) to save battery. The summary arrives *around* the chosen time.
+- **Survives restarts and reboots:** WorkManager persists the job; the app also re-checks the schedule on every start (without shifting it) and re-schedules immediately when the time or switch changes.
+- **No background location:** the job uses the *saved* location and downloads a fresh forecast, falling back to an offline copy up to 6 hours old. If no usable data is available after a few retries, or the job runs more than 3 hours late (e.g. the phone was off), that day's summary is skipped rather than showing stale advice.
+- **Android 13+ permission:** `POST_NOTIFICATIONS` is requested only after an explanation — a one-time card on the Today screen ("Turn on" / "Not now") or the Settings switch. If notifications are blocked, Settings says so and links to the system page.
 
 ## Security
 

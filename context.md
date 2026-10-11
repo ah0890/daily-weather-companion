@@ -1,7 +1,7 @@
 # Project Context — Daily Weather Companion
 
 Quick-start context for continuing development. Read this first; open source files only when needed.
-Last updated: 2026-10-11 (after the settings milestone).
+Last updated: 2026-10-11 (after the daily-notification milestone).
 
 ## 1. What this is
 
@@ -77,6 +77,7 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 | `data/local/WeatherCache.kt` | `FileWeatherCache` — one versioned JSON record (`files/weather_cache.json`), atomic temp-file move, matches by ~1 km coords, corrupt/old → null |
 | `data/local/DataStoreLocationRepository.kt` | Stores rounded lat/lon, name (≤100 chars), saved time; corrupt → null |
 | `location/` | `AndroidLocationProvider` (one-shot fix: fused/network 10 s → GPS 20 s on API 31+ → last-known ≤3 h), `GeocoderPlaceNameResolver` (rounded coords, 10 s timeout) |
+| `notifications/` | `NotificationSchedule` (pure: `nextRun` by calendar/DST-safe, `isTooLate` > 3 h), `DailySummary` (pure content from forecast), `DailySummaryWork` (testable run: disabled/blocked/no location/too late/retry ×3/stale ≤ 6 h → `Outcome`), `DailyWeatherWorker` (CoroutineWorker; re-schedules next run with APPEND_OR_REPLACE, never returns failure), `WorkManagerNotificationScheduler` (unique work `daily_weather_summary`; KEEP on app start, REPLACE on settings change), `AndroidDailySummaryNotifier` (channel `daily_summary`, BigText) |
 | `presentation/home/` | `HomeRoute` (permission launcher, resume check, settings intents) + stateless `HomeScreen(state, weather, HomeActions)` in a `PullToRefreshBox`; `HomeViewModel` (location + weather); `LocationUiState(location, source Saved/Current, status)`; `WeatherUiState` (Idle/Loading/Loaded(+isRefreshing, refreshError)/Error); `CurrentWeatherSection` (hero card → `TodayOutlookCard` → `CommuteCard` → hourly → details; loading/error/refresh-failed); now in `presentation/weather/` |
 | `presentation/components/` | `RelativeAge` ("updated 3 hours ago") |
 | `presentation/weather/` | Shared weather UI: `ConditionUi` (condition → `WeatherMood`, emoji, label), `WeatherFormatting` (°, km/h, mm, compass, visibility, UV band), `HourlyForecastRow` (LazyRow, rain bar, ≥50% highlighted, bleeds to edge), `WeatherErrorCard` |
@@ -85,11 +86,11 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 | `presentation/components/` (more) | `LocalUserPreferences` (provided in `MainActivity`; use `temperatureText()` not `formatTemperature()` in UI), `SystemIntents` (`LOCATION_PERMISSION`, `hasLocationPermission`, `openSettings`, `openUrl`) |
 | `ui/theme/` | Custom light/dark colours, typography, shapes; `WeatherBackdrop.forMood(WeatherMood, dark)` pastel/deep gradients with high-contrast content colour; `LocalDarkTheme` |
 
-Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVM — use in-memory for multi-write tests). JSON fixture: `test/resources/openmeteo/forecast_sample.json`. Currently **166 tests**, all passing; lint clean.
+Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVM — use in-memory for multi-write tests). JSON fixture: `test/resources/openmeteo/forecast_sample.json`. Currently **189 tests**, all passing; lint clean.
 
 ## 6. Key behaviour & decisions
 
-- Permission: **ACCESS_COARSE_LOCATION only** + INTERNET. No fine/background location. `usesCleartextTraffic=false`, backups fully disabled (`data_extraction_rules.xml`).
+- Permission: **ACCESS_COARSE_LOCATION only** + INTERNET + POST_NOTIFICATIONS (asked after explanation: one-time `NotificationPromptCard` on Today or Settings switch). No fine/background location. `usesCleartextTraffic=false`, backups fully disabled (`data_extraction_rules.xml`).
 - Location flow: explain card → system dialog only on tap. Denied once → "Try again"; permanent → "Open settings". Location services off → "Turn on location" (auto-retries on resume).
 - Weather loads when the location's (rounded) coordinates change, on pull-to-refresh/retry, and on resume if older than 30 min — never polled. On start the cache is shown first; a cache < 30 min old means no network call. Failed refresh / offline → last forecast + `StaleForecastNotice` ("Last updated: Today, 6:45 AM"; >1 h old → "may be out of date"). VM wraps every forecast with `advancedTo(now at location)` so stale data never shows past hours as now.
 - Saved location shown instantly on launch. Auto lookup only if none saved or saved > 6 h old (quiet; failure keeps saved). Manual refresh icon in header. Failures with a saved location show a small non-blocking notice.
@@ -111,11 +112,11 @@ Done (commit):
 9. Rain timing + umbrella recommendation (`40fff9c`)
 10. Commute summary ("Plan your day") (`c61de46`)
 11. Offline cache + "last updated" (`600339d`)
-12. Settings (units, theme, commute times, privacy, about)
+12. Settings (units, theme, commute times, privacy, about) (`cca313c`)
+13. Daily morning notification
 
 Next (in order, adapt if needed):
 
-13. Daily ~7:00 notification (WorkManager, no exact alarms, POST_NOTIFICATIONS on 13+) + notification on/off and time rows in Settings (extend `UserPreferences`)
 14. Accessibility pass, error-handling polish, UI polish, docs, final QA
 
 ## 8. Open items / notes

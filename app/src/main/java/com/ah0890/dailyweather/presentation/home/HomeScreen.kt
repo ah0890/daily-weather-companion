@@ -1,5 +1,6 @@
 package com.ah0890.dailyweather.presentation.home
 
+import android.Manifest
 import android.provider.Settings
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -32,7 +33,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -46,15 +49,20 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.Coordinates
 import com.ah0890.dailyweather.domain.model.LocationData
 import com.ah0890.dailyweather.domain.model.SavedLocation
 import com.ah0890.dailyweather.presentation.components.LOCATION_PERMISSION
+import com.ah0890.dailyweather.presentation.components.LocalUserPreferences
 import com.ah0890.dailyweather.presentation.components.RelativeAge
+import com.ah0890.dailyweather.presentation.components.canPostNotifications
 import com.ah0890.dailyweather.presentation.components.hasLocationPermission
+import com.ah0890.dailyweather.presentation.components.needsNotificationPermission
 import com.ah0890.dailyweather.presentation.components.openSettings
 import com.ah0890.dailyweather.presentation.components.text
+import com.ah0890.dailyweather.presentation.settings.SettingsViewModel
 import com.ah0890.dailyweather.ui.theme.DailyWeatherTheme
 import java.time.Instant
 import java.time.LocalTime
@@ -63,7 +71,10 @@ private val ScreenPadding = 20.dp
 
 /** Stateful entry point: wires the ViewModel, the permission dialog and system settings. */
 @Composable
-fun HomeRoute(viewModel: HomeViewModel) {
+fun HomeRoute(
+    viewModel: HomeViewModel,
+    settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
+) {
     val state by viewModel.locationState.collectAsStateWithLifecycle()
     val weather by viewModel.weatherState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -77,12 +88,27 @@ fun HomeRoute(viewModel: HomeViewModel) {
         viewModel.onPermissionResult(granted, canAskAgain)
     }
 
+    var notificationsAllowed by remember { mutableStateOf(context.canPostNotifications()) }
+    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        notificationsAllowed = context.canPostNotifications()
+        settingsViewModel.dismissNotificationPrompt()
+    }
+
     // Re-checked on every resume so returning from system settings is picked up.
     LifecycleResumeEffect(viewModel) {
         viewModel.onPermissionChecked(context.hasLocationPermission())
         viewModel.refreshWeatherIfStale()
+        notificationsAllowed = context.canPostNotifications()
         onPauseOrDispose { }
     }
+
+    val preferences = LocalUserPreferences.current
+    // Asked once, after a location is set, and only where Android requires a runtime permission.
+    val showNotificationPrompt = needsNotificationPermission &&
+        preferences.dailyNotificationEnabled &&
+        !preferences.notificationPromptDismissed &&
+        !notificationsAllowed &&
+        state.location != null
 
     HomeScreen(
         state = state,
@@ -99,7 +125,10 @@ fun HomeRoute(viewModel: HomeViewModel) {
             openAppSettings = { context.openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, withPackage = true) },
             openLocationSettings = { context.openSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS) },
             refreshWeather = viewModel::refreshWeather,
+            allowNotifications = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+            dismissNotificationPrompt = settingsViewModel::dismissNotificationPrompt,
         ),
+        notificationPromptTime = preferences.dailyNotificationTime.takeIf { showNotificationPrompt },
     )
 }
 
@@ -110,6 +139,8 @@ class HomeActions(
     val openAppSettings: () -> Unit = {},
     val openLocationSettings: () -> Unit = {},
     val refreshWeather: () -> Unit = {},
+    val allowNotifications: () -> Unit = {},
+    val dismissNotificationPrompt: () -> Unit = {},
 )
 
 @Composable
@@ -118,6 +149,7 @@ fun HomeScreen(
     weather: WeatherUiState,
     actions: HomeActions,
     modifier: Modifier = Modifier,
+    notificationPromptTime: LocalTime? = null,
 ) {
     val greeting = remember { greetingFor(LocalTime.now().hour) }
 
@@ -147,6 +179,13 @@ fun HomeScreen(
             if (location != null) {
                 SavedLocationNotice(state.status, actions)
                 CurrentWeatherSection(weather, edgePadding = ScreenPadding, onRetry = actions.refreshWeather)
+                if (notificationPromptTime != null) {
+                    NotificationPromptCard(
+                        time = notificationPromptTime,
+                        onAllow = actions.allowNotifications,
+                        onDismiss = actions.dismissNotificationPrompt,
+                    )
+                }
             } else {
                 NoLocationContent(state.status, actions)
             }

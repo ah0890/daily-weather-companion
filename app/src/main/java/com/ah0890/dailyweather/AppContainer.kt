@@ -17,6 +17,10 @@ import com.ah0890.dailyweather.location.AndroidLocationProvider
 import com.ah0890.dailyweather.location.GeocoderPlaceNameResolver
 import com.ah0890.dailyweather.location.LocationProvider
 import com.ah0890.dailyweather.location.PlaceNameResolver
+import com.ah0890.dailyweather.notifications.AndroidDailySummaryNotifier
+import com.ah0890.dailyweather.notifications.DailySummaryNotifier
+import com.ah0890.dailyweather.notifications.NotificationScheduler
+import com.ah0890.dailyweather.notifications.WorkManagerNotificationScheduler
 import java.io.File
 
 /** App-wide dependencies, created lazily. A hand-written container keeps the build simple. */
@@ -31,6 +35,9 @@ class AppContainer(context: Context) {
             cache = FileWeatherCache(File(appContext.filesDir, "weather_cache.json")),
         )
     }
+
+    val notificationScheduler: NotificationScheduler by lazy { WorkManagerNotificationScheduler(appContext) }
+    val dailySummaryNotifier: DailySummaryNotifier by lazy { AndroidDailySummaryNotifier(appContext) }
 
     // DataStore requires a single instance per file for the whole process.
     val preferencesRepository: PreferencesRepository by lazy {

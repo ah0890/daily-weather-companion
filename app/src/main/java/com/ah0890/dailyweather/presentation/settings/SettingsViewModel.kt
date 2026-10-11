@@ -10,13 +10,18 @@ import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.ThemeMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.repository.PreferencesRepository
+import com.ah0890.dailyweather.notifications.NotificationScheduler
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalTime
 
-class SettingsViewModel(private val repository: PreferencesRepository) : ViewModel() {
+class SettingsViewModel(
+    private val repository: PreferencesRepository,
+    private val scheduler: NotificationScheduler,
+) : ViewModel() {
 
     val preferences: StateFlow<UserPreferences> = repository.preferences
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UserPreferences())
@@ -29,6 +34,25 @@ class SettingsViewModel(private val repository: PreferencesRepository) : ViewMod
 
     fun setEveningCommute(time: LocalTime) = launch { repository.setEveningCommute(time) }
 
+    fun setDailyNotificationEnabled(enabled: Boolean) = launch {
+        repository.setDailyNotificationEnabled(enabled)
+        if (enabled) {
+            scheduler.schedule(repository.preferences.first().dailyNotificationTime, NotificationScheduler.Policy.Replace)
+        } else {
+            scheduler.cancel()
+        }
+    }
+
+    fun setDailyNotificationTime(time: LocalTime) = launch {
+        repository.setDailyNotificationTime(time)
+        if (repository.preferences.first().dailyNotificationEnabled) {
+            scheduler.schedule(time, NotificationScheduler.Policy.Replace)
+        }
+    }
+
+    /** The one-time prompt on the Today screen was answered either way. */
+    fun dismissNotificationPrompt() = launch { repository.setNotificationPromptDismissed() }
+
     private fun launch(block: suspend () -> Unit) {
         viewModelScope.launch { block() }
     }
@@ -37,7 +61,7 @@ class SettingsViewModel(private val repository: PreferencesRepository) : ViewMod
         val Factory = viewModelFactory {
             initializer {
                 val container = (this[APPLICATION_KEY] as DailyWeatherApplication).container
-                SettingsViewModel(container.preferencesRepository)
+                SettingsViewModel(container.preferencesRepository, container.notificationScheduler)
             }
         }
     }

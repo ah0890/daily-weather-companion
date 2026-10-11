@@ -11,6 +11,9 @@
     -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <!-- Morning weather summary (Android 13+ asks the user; requested only after an explanation). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!--
         Backups are disabled: allowBackup="false" covers Android 11 and lower, and
         dataExtractionRules excludes everything on Android 12+. fullBackupContent is therefore
