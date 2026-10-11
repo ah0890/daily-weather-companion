@@ -15,6 +15,14 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!--
+        Added by WorkManager for foreground workers, which this app doesn't use. Removed to keep
+        permissions to the minimum; WorkManager's boot, wake-lock and network-state permissions stay.
+    -->
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE"
+        tools:node="remove" />
+
+    <!--
         Backups are disabled: allowBackup="false" covers Android 11 and lower, and
         dataExtractionRules excludes everything on Android 12+. fullBackupContent is therefore
         unnecessary on older versions.
