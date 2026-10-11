@@ -2,7 +2,7 @@
 
 A calm, location-aware Android weather app built around one question: **what should I expect today, and do I need an umbrella?**
 
-> **Status:** early development. The project foundation (build, theme, navigation) is in place; weather features are being added milestone by milestone.
+> **Version 1.0.0** — all core features are implemented and covered by 191 unit tests. Built for personal daily use.
 
 ## Overview
 
@@ -33,7 +33,11 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 
 ## Screenshots
 
-_Screenshots will be added once the main screens are implemented._
+| Today | 7 days | Settings |
+| --- | --- | --- |
+| _add `docs/screenshots/today.png`_ | _add `docs/screenshots/forecast.png`_ | _add `docs/screenshots/settings.png`_ |
+
+Capture them on a device or emulator (`adb exec-out screencap -p > today.png`) and place them in `docs/screenshots/`.
 
 ## Technology Stack
 
@@ -73,7 +77,7 @@ Package layout (`com.ah0890.dailyweather`):
 
 ```text
 presentation/   Compose screens and ViewModels (home, forecast, settings, navigation, components)
-domain/         Pure Kotlin models and repository interfaces (use cases upcoming)
+domain/         Pure Kotlin models, repository interfaces and use cases (rain analysis, commute)
 data/           Open-Meteo API client, weather repository, offline forecast cache and saved-location storage
 location/       One-shot location lookup and place-name resolution
 notifications/  Morning summary: scheduling rules, WorkManager job and notification
@@ -84,14 +88,16 @@ Dependencies are wired with a small manual container rather than a DI framework 
 
 ## Weather API
 
-The planned provider is **[Open-Meteo](https://open-meteo.com/)**:
+The app uses **[Open-Meteo](https://open-meteo.com/)**, chosen over keyed services (OpenWeatherMap, WeatherAPI, Tomorrow.io) because it offers everything the app needs without an account:
 
 - Free for non-commercial use, **no API key required**
 - Coordinates-based hourly and daily forecasts over HTTPS
 - Hourly **precipitation probability** and **precipitation amount**, temperature, apparent temperature, wind, UV index, visibility, sunrise/sunset and WMO weather codes
 - Good documentation and generous rate limits (~10,000 calls/day for non-commercial use)
 
-Place names are resolved with Android's on-device `Geocoder`, so no separate geocoding service is needed.
+One request returns current conditions, 7 days of hourly data and 7 daily summaries, and the app requests it only when the location changes, on pull-to-refresh, on return after 30 minutes, and once each morning — far below the free limits. Data is attributed in Settings as required by Open-Meteo's CC BY 4.0 licence.
+
+Place names are resolved with Android's `Geocoder`, so no separate geocoding service is needed.
 
 The data layer sits behind a repository interface, so the provider can be swapped later without touching the UI.
 
@@ -151,7 +157,7 @@ The last successfully found location is saved on the device in a private
 - If permission is later revoked or GPS is unavailable, the saved location keeps working and a small note explains why it wasn't refreshed.
 - The saved location is excluded from cloud backup and device transfer.
 
-Planned: use the saved location for the daily notification instead of tracking location in the background.
+The daily notification uses this saved location, so the app never needs background location access.
 
 ## Settings and Privacy
 
@@ -178,11 +184,23 @@ How it is scheduled, and why:
 
 ## Security
 
-- No API keys or secrets are required by the current weather provider.
-- `local.properties`, keystores and `.env` files are git-ignored. If a keyed provider is ever added, its key will be read from `local.properties` into `BuildConfig` at build time and never committed.
-- Network traffic uses HTTPS only.
+- No API keys or secrets are required by the weather provider.
+- `local.properties`, `keystore.properties`, keystores and `.env` files are git-ignored. If a keyed provider is ever added, its key should be read from `local.properties` into `BuildConfig` at build time and never committed.
+- HTTPS only (`usesCleartextTraffic="false"`); no request logging, so coordinates never reach logcat.
+- Coordinates are rounded to ~1 km before they are sent anywhere or stored.
 - App data is excluded from cloud backup and device-to-device transfer (`data_extraction_rules.xml`).
-- Only the permissions a feature actually needs are declared.
+- API responses are validated: malformed or partial data is rejected or skipped, never trusted blindly.
+
+Permissions in the installed app (from the merged manifest):
+
+| Permission | Why |
+| --- | --- |
+| `ACCESS_COARSE_LOCATION` | Approximate location for the local forecast (foreground only) |
+| `INTERNET` | Downloading forecasts |
+| `POST_NOTIFICATIONS` | The morning summary (Android 13+, asked after an explanation) |
+| `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `ACCESS_NETWORK_STATE` | Added by WorkManager so the daily job survives reboots and runs reliably |
+
+WorkManager's `FOREGROUND_SERVICE` permission is removed because the app has no foreground work.
 
 ## Setup Instructions
 
@@ -208,20 +226,57 @@ None needed — Open-Meteo is keyless. `local.properties` is reserved for any fu
 
 ```bash
 ./gradlew assembleDebug        # debug APK  → app/build/outputs/apk/debug/
-./gradlew assembleRelease      # minified release APK (unsigned)
 ./gradlew installDebug         # install on a connected device/emulator
+./gradlew assembleRelease      # minified release APK → app/build/outputs/apk/release/
 ```
+
+### Signing a release build
+
+Release builds are unsigned unless a `keystore.properties` file exists in the project root. It is git-ignored; never commit it or the keystore.
+
+```properties
+storeFile=release.jks
+storePassword=…
+keyAlias=dailyweather
+keyPassword=…
+```
+
+Create a keystore once with `keytool -genkeypair -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias dailyweather` and keep a backup somewhere safe — losing it means you can't update the installed app.
 
 ## Testing
 
 ```bash
-./gradlew testDebugUnitTest    # JVM unit tests
+./gradlew testDebugUnitTest    # JVM unit tests (191)
 ./gradlew lintDebug            # Android Lint
 ```
 
+The unit tests cover, among other things:
+
+- **Parsing and validation** of Open-Meteo responses, including malformed, partial and out-of-range data, and the real HTTP stack against a local mock server (timeouts, 429, 5xx, invalid JSON, unreachable server).
+- **Rain and umbrella rules** at 0 / 20 / 50 / 80 / 100 %, threshold boundaries, period merging and the rest-of-day window.
+- **Commute summary**, **offline cache** (corrupt files, format versions, location mismatch) and **stale-forecast handling**.
+- **Location and settings persistence**, permission and location state handling in the ViewModels.
+- **Notification scheduling** (including daylight-saving changes, late runs and retries).
+
+### Manual test checklist
+
+Things that need a real device or emulator:
+
+1. First launch: explanation → permission dialog; deny once / twice; *Open settings*.
+2. Weather loads for the location; pull to refresh; switch tabs (no extra download).
+3. Airplane mode: cached forecast with *"Last updated …"*; cold start offline.
+4. Settings: °C/°F and theme apply immediately; change commute and notification times.
+5. Notification: set the time a few minutes ahead and lock the phone; check it arrives (Android may delay it by several minutes) and survives a reboot.
+
+## Known Limitations
+
+- The morning summary arrives *around* the chosen time; Android's battery optimisation can delay it, and some manufacturers' aggressive battery savers can block background work unless the app is exempted.
+- Place names depend on the phone's geocoder; without one (or offline) the app shows "Current location" / "Saved location".
+- The forecast covers 7 days; very old cached data can't be moved forward beyond that.
+
 ## Future Improvements
 
-Multiple saved locations, home-screen widget, severe-weather alerts, air quality, pollen, UV alerts, custom notification schedules and Wear OS support.
+The architecture (repository interfaces, provider-independent domain models, pure use cases) is meant to make these straightforward: multiple saved locations, a home-screen widget, severe-weather alerts, air quality, pollen, UV alerts, custom notification schedules and Wear OS support.
 
 ## License
 

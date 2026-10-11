@@ -1,7 +1,7 @@
 # Project Context — Daily Weather Companion
 
 Quick-start context for continuing development. Read this first; open source files only when needed.
-Last updated: 2026-10-11 (after the error-handling pass).
+Last updated: 2026-10-11 — **v1.0.0 complete**; all planned milestones done.
 
 ## 1. What this is
 
@@ -116,11 +116,15 @@ Done (commit):
 12. Settings (units, theme, commute times, privacy, about) (`cca313c`)
 13. Daily morning notification (`34839dd`)
 14. Accessibility pass (`a3ed22c`, `0e3a14e`)
-15. Error-handling polish (job never fails/always reschedules, SecurityException on notify, NaN coords, geocoder, settings IO) + weather crossfade
+15. Error-handling polish + weather crossfade (`861b02f`)
+16. Release prep: v1.0.0, optional signing via git-ignored `keystore.properties`, `FOREGROUND_SERVICE` removed (`81249ec`)
+17. Final README (permissions table, signing, test coverage, manual checklist, known limitations)
 
-Next (in order, adapt if needed):
+Next (owner decisions / optional):
 
-16. Docs + final QA + 1.0.0
+- Manual QA on a device (README → "Manual test checklist"); the emulator was kept off from the current-weather milestone onwards at the owner's request, so later UI was verified by unit tests, lint and builds only.
+- Add screenshots to `docs/screenshots/`, choose a licence, create a signing keystore for release builds.
+- Future ideas: multiple locations, widget, alerts, air quality, Wear OS.
 
 ## 8. Open items / notes
 
