@@ -1,10 +1,5 @@
 package com.ah0890.dailyweather.presentation.home
 
-import android.Manifest
-import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -49,20 +44,21 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.Coordinates
 import com.ah0890.dailyweather.domain.model.LocationData
 import com.ah0890.dailyweather.domain.model.SavedLocation
+import com.ah0890.dailyweather.presentation.components.LOCATION_PERMISSION
 import com.ah0890.dailyweather.presentation.components.RelativeAge
+import com.ah0890.dailyweather.presentation.components.hasLocationPermission
+import com.ah0890.dailyweather.presentation.components.openSettings
 import com.ah0890.dailyweather.presentation.components.text
 import com.ah0890.dailyweather.ui.theme.DailyWeatherTheme
 import java.time.Instant
 import java.time.LocalTime
 
-private const val LOCATION_PERMISSION = Manifest.permission.ACCESS_COARSE_LOCATION
 private val ScreenPadding = 20.dp
 
 /** Stateful entry point: wires the ViewModel, the permission dialog and system settings. */
@@ -369,16 +365,6 @@ private fun LocatingCard() {
     }
 }
 
-private fun Context.hasLocationPermission(): Boolean =
-    ContextCompat.checkSelfPermission(this, LOCATION_PERMISSION) == PackageManager.PERMISSION_GRANTED
-
-private fun Context.openSettings(action: String, withPackage: Boolean = false) {
-    val intent = Intent(action).apply {
-        if (withPackage) data = Uri.fromParts("package", packageName, null)
-    }
-    // Some devices lack a settings screen for an action; failing quietly is better than crashing.
-    runCatching { startActivity(intent) }
-}
 
 private val previewLocation = SavedLocation(
     LocationData(Coordinates(51.51, -0.13), "London"),

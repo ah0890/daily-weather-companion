@@ -1,15 +1,29 @@
 package com.ah0890.dailyweather.presentation.weather
 
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
 import com.ah0890.dailyweather.R
+import com.ah0890.dailyweather.domain.model.TemperatureUnit
+import com.ah0890.dailyweather.presentation.components.LocalUserPreferences
 import java.util.Locale
 import kotlin.math.roundToInt
 
-/** Whole-degree temperature such as "22°". Avoids showing "-0°". */
-fun formatTemperature(celsius: Double): String {
-    val rounded = celsius.roundToInt()
+/**
+ * Whole-degree temperature such as "22°", converted to [unit]. Avoids showing "-0°". Forecasts are
+ * always stored in Celsius, so changing the unit never needs a new download.
+ */
+fun formatTemperature(celsius: Double, unit: TemperatureUnit = TemperatureUnit.Celsius): String {
+    val value = when (unit) {
+        TemperatureUnit.Celsius -> celsius
+        TemperatureUnit.Fahrenheit -> celsius * 9 / 5 + 32
+    }
+    val rounded = value.roundToInt()
     return "${if (rounded == 0) 0 else rounded}°"
 }
+
+/** [formatTemperature] in the user's chosen unit. */
+@Composable
+fun temperatureText(celsius: Double): String = formatTemperature(celsius, LocalUserPreferences.current.temperatureUnit)
 
 fun formatWindSpeed(kmh: Double): String = "${kmh.roundToInt()} km/h"
 

@@ -1,6 +1,7 @@
 package com.ah0890.dailyweather.presentation.weather
 
 import com.ah0890.dailyweather.R
+import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.WeatherCondition
 import com.ah0890.dailyweather.ui.theme.WeatherMood
 import org.junit.Assert.assertEquals
@@ -14,6 +15,14 @@ class WeatherFormattingTest {
         assertEquals("22°", formatTemperature(21.5))
         assertEquals("21°", formatTemperature(21.4))
         assertEquals("-3°", formatTemperature(-2.6))
+    }
+
+    @Test
+    fun `fahrenheit is converted from celsius`() {
+        assertEquals("32°", formatTemperature(0.0, TemperatureUnit.Fahrenheit))
+        assertEquals("72°", formatTemperature(22.0, TemperatureUnit.Fahrenheit))
+        assertEquals("-4°", formatTemperature(-20.0, TemperatureUnit.Fahrenheit))
+        assertEquals("0°", formatTemperature(-17.9, TemperatureUnit.Fahrenheit))
     }
 
     @Test

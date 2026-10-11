@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,7 +22,8 @@ import androidx.navigation.compose.rememberNavController
 import com.ah0890.dailyweather.presentation.forecast.ForecastRoute
 import com.ah0890.dailyweather.presentation.home.HomeRoute
 import com.ah0890.dailyweather.presentation.home.HomeViewModel
-import com.ah0890.dailyweather.presentation.settings.SettingsScreen
+import com.ah0890.dailyweather.presentation.settings.PrivacyScreen
+import com.ah0890.dailyweather.presentation.settings.SettingsRoute
 
 @Composable
 fun DailyWeatherApp() {
@@ -37,18 +39,11 @@ fun DailyWeatherApp() {
             NavigationBar {
                 TopLevelDestination.entries.forEach { destination ->
                     val selected = currentDestination?.hierarchy
-                        ?.any { it.hasRoute(destination.route::class) } == true
+                        ?.any { it.hasRoute(destination.route::class) } == true ||
+                        (destination == TopLevelDestination.Settings && currentDestination?.hasRoute(PrivacyRoute::class) == true)
                     NavigationBarItem(
                         selected = selected,
-                        onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
+                        onClick = { navController.navigateToTab(destination.route) },
                         // The label already names the destination, so the icon stays silent for screen readers.
                         icon = { Icon(destination.icon, contentDescription = null) },
                         label = { Text(stringResource(destination.label)) },
@@ -64,7 +59,23 @@ fun DailyWeatherApp() {
         ) {
             composable<TodayRoute> { HomeRoute(weatherViewModel) }
             composable<ForecastRoute> { ForecastRoute(weatherViewModel) }
-            composable<SettingsRoute> { SettingsScreen() }
+            composable<SettingsRoute> {
+                SettingsRoute(
+                    weatherViewModel = weatherViewModel,
+                    onOpenPrivacy = { navController.navigate(PrivacyRoute) },
+                    onLocationUpdateRequested = { navController.navigateToTab(TodayRoute) },
+                )
+            }
+            composable<PrivacyRoute> { PrivacyScreen(onBack = { navController.popBackStack() }) }
         }
+    }
+}
+
+/** Switches tabs the standard way: one copy of each tab, with its state saved and restored. */
+private fun NavController.navigateToTab(route: Any) {
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
     }
 }

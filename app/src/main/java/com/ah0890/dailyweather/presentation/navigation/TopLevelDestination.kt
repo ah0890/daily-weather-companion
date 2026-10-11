@@ -18,6 +18,10 @@ data object ForecastRoute
 @Serializable
 data object SettingsRoute
 
+/** Opened from Settings; the Settings tab stays selected. */
+@Serializable
+data object PrivacyRoute
+
 enum class TopLevelDestination(
     val route: Any,
     @StringRes val label: Int,

@@ -62,9 +62,9 @@ import com.ah0890.dailyweather.presentation.weather.StaleForecastNotice
 import com.ah0890.dailyweather.presentation.weather.WeatherErrorCard
 import com.ah0890.dailyweather.presentation.weather.emoji
 import com.ah0890.dailyweather.presentation.weather.formatPrecipitation
-import com.ah0890.dailyweather.presentation.weather.formatTemperature
 import com.ah0890.dailyweather.presentation.weather.formatWindSpeed
 import com.ah0890.dailyweather.presentation.weather.labelRes
+import com.ah0890.dailyweather.presentation.weather.temperatureText
 import com.ah0890.dailyweather.presentation.weather.uvLevelRes
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -202,8 +202,8 @@ private fun DayCard(
         DayLabel.Tomorrow -> stringResource(R.string.forecast_tomorrow)
         is DayLabel.Weekday -> label.day.getDisplayName(TextStyle.SHORT, locale)
     }
-    val high = formatTemperature(day.maxTemperatureC)
-    val low = formatTemperature(day.minTemperatureC)
+    val high = temperatureText(day.maxTemperatureC)
+    val low = temperatureText(day.minTemperatureC)
     val condition = stringResource(day.condition.labelRes)
     val chance = day.precipitationProbabilityMax
 

@@ -31,10 +31,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ah0890.dailyweather.R
-import com.ah0890.dailyweather.domain.model.CommuteTimes
 import com.ah0890.dailyweather.domain.model.WeatherForecast
 import com.ah0890.dailyweather.domain.usecase.CommuteAnalysis
 import com.ah0890.dailyweather.domain.usecase.RainAnalysis
+import com.ah0890.dailyweather.presentation.components.LocalUserPreferences
 import com.ah0890.dailyweather.presentation.components.RelativeAge
 import com.ah0890.dailyweather.presentation.components.text
 import com.ah0890.dailyweather.presentation.weather.HourlyForecastRow
@@ -42,10 +42,10 @@ import com.ah0890.dailyweather.presentation.weather.StaleForecastNotice
 import com.ah0890.dailyweather.presentation.weather.WeatherErrorCard
 import com.ah0890.dailyweather.presentation.weather.compassDirection
 import com.ah0890.dailyweather.presentation.weather.emoji
-import com.ah0890.dailyweather.presentation.weather.formatTemperature
 import com.ah0890.dailyweather.presentation.weather.formatVisibility
 import com.ah0890.dailyweather.presentation.weather.formatWindSpeed
 import com.ah0890.dailyweather.presentation.weather.labelRes
+import com.ah0890.dailyweather.presentation.weather.temperatureText
 import com.ah0890.dailyweather.presentation.weather.mood
 import com.ah0890.dailyweather.presentation.weather.uvLevelRes
 import com.ah0890.dailyweather.ui.theme.LocalDarkTheme
@@ -66,8 +66,8 @@ fun CurrentWeatherSection(
     state: WeatherUiState,
     edgePadding: Dp,
     onRetry: () -> Unit,
-    commuteTimes: CommuteTimes = CommuteTimes(),
 ) {
+    val commuteTimes = LocalUserPreferences.current.commuteTimes
     when (state) {
         WeatherUiState.Idle -> Unit
         WeatherUiState.Loading -> LoadingCard()
@@ -110,7 +110,7 @@ private fun CurrentWeatherCard(forecast: WeatherForecast, fetchedAt: Instant) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = formatTemperature(current.temperatureC),
+                    text = temperatureText(current.temperatureC),
                     style = MaterialTheme.typography.displayLarge,
                     color = backdrop.content,
                 )
@@ -129,13 +129,13 @@ private fun CurrentWeatherCard(forecast: WeatherForecast, fetchedAt: Instant) {
         }
         Spacer(Modifier.height(8.dp))
         Text(
-            text = stringResource(R.string.weather_feels_like, formatTemperature(current.feelsLikeC)),
+            text = stringResource(R.string.weather_feels_like, temperatureText(current.feelsLikeC)),
             style = MaterialTheme.typography.bodyLarge,
             color = backdrop.content,
         )
         if (today != null) {
-            val high = formatTemperature(today.maxTemperatureC)
-            val low = formatTemperature(today.minTemperatureC)
+            val high = temperatureText(today.maxTemperatureC)
+            val low = temperatureText(today.minTemperatureC)
             val description = stringResource(R.string.weather_high_low_description, high, low)
             Text(
                 text = stringResource(R.string.weather_high_low, high, low),

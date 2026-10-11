@@ -1,7 +1,7 @@
 # Project Context — Daily Weather Companion
 
 Quick-start context for continuing development. Read this first; open source files only when needed.
-Last updated: 2026-10-11 (after the offline-cache milestone).
+Last updated: 2026-10-11 (after the settings milestone).
 
 ## 1. What this is
 
@@ -64,12 +64,13 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 
 | Path (`app/src/main/java/com/ah0890/dailyweather/`) | Purpose |
 | --- | --- |
-| `MainActivity.kt` | Edge-to-edge, `DailyWeatherTheme { DailyWeatherApp() }` |
+| `MainActivity.kt` | Collects preferences → `LocalUserPreferences`, resolves theme (System/Light/Dark) and re-applies edge-to-edge bar styles |
 | `AppContainer.kt` | Wires `LocationProvider`, `PlaceNameResolver`, `WeatherRepository` (Open-Meteo), `LocationRepository` (DataStore `saved_location`) |
 | `domain/model/` | `WeatherForecast`, `CurrentWeather`, `HourlyForecast`, `DailyForecast` (metric units, location-local `LocalDateTime`), `WeatherCondition` (+`isPrecipitation`), `Coordinates` (validated; `approximate()` = 2 decimals), `LocationData`, `SavedLocation`, `WeatherResult` (`Success(forecast, fetchedAt)` / `Failure(WeatherError)`) |
 | `domain/model/` (rain) | `RainInformation` (max %, peak time, total mm, `RainPeriod`s), `WeatherRecommendation` (`UmbrellaAdvice` Recommended/Consider/NotNeeded), `TodayOutlook` |
 | `domain/usecase/RainAnalysis.kt` | Pure rules: ≥40% = rain likely, periods merge across 1 dry hour; umbrella ≥60% or raining now → Recommended, ≥30% or ≥1 mm → Consider; window = rest of today (≥6 h); `summary()` → `RainSummary` (NowUntil/Between/ChanceAround/LightRain/Low) — reuse for the notification |
 | `domain/model/Commute.kt` + `domain/usecase/CommuteAnalysis.kt` | `CommuteTimes` (default 08:00/17:00 — not yet user-configurable; Settings milestone must persist them and pass into `CurrentWeatherSection(commuteTimes=…)`), legs use departure hour + next hour, rain levels reuse umbrella thresholds, windy ≥ 39 km/h; after evening trip → tomorrow |
+| `domain/model/UserPreferences.kt` + `data/local/DataStorePreferencesRepository.kt` | `TemperatureUnit`, `ThemeMode`, `CommuteTimes` in DataStore `user_preferences` (enums by name, times as minutes; invalid → defaults) |
 | `domain/repository/` | `WeatherRepository.getForecast(coords): WeatherResult` (never throws), `LocationRepository` (`savedLocation: Flow`, `save()`) |
 | `data/remote/openmeteo/` | `OpenMeteoApi` (single `v1/forecast` call: current + 7-day hourly + daily, `timezone=auto`), nullable DTOs, `OpenMeteoMapper` (validates, skips bad rows, WMO→condition), `OpenMeteoDataSource.create()` (timeouts, no logging) |
 | `data/repository/DefaultWeatherRepository.kt` | Saves each success to the cache; on failure returns `WeatherResult.Stale(cached, error)` if cached; `cachedForecast()` for instant start. Maps exceptions → `WeatherError` (NoConnection, Timeout, RateLimited, ServiceUnavailable, InvalidData, Unexpected); rethrows cancellation |
@@ -77,13 +78,14 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 | `data/local/DataStoreLocationRepository.kt` | Stores rounded lat/lon, name (≤100 chars), saved time; corrupt → null |
 | `location/` | `AndroidLocationProvider` (one-shot fix: fused/network 10 s → GPS 20 s on API 31+ → last-known ≤3 h), `GeocoderPlaceNameResolver` (rounded coords, 10 s timeout) |
 | `presentation/home/` | `HomeRoute` (permission launcher, resume check, settings intents) + stateless `HomeScreen(state, weather, HomeActions)` in a `PullToRefreshBox`; `HomeViewModel` (location + weather); `LocationUiState(location, source Saved/Current, status)`; `WeatherUiState` (Idle/Loading/Loaded(+isRefreshing, refreshError)/Error); `CurrentWeatherSection` (hero card → `TodayOutlookCard` → `CommuteCard` → hourly → details; loading/error/refresh-failed); now in `presentation/weather/` |
-| `presentation/components/` | `PlaceholderScreen`, `RelativeAge` ("updated 3 hours ago") |
+| `presentation/components/` | `RelativeAge` ("updated 3 hours ago") |
 | `presentation/weather/` | Shared weather UI: `ConditionUi` (condition → `WeatherMood`, emoji, label), `WeatherFormatting` (°, km/h, mm, compass, visibility, UV band), `HourlyForecastRow` (LazyRow, rain bar, ≥50% highlighted, bleeds to edge), `WeatherErrorCard` |
 | `presentation/forecast/` | `ForecastRoute`/`ForecastScreen`: LazyColumn of `DayCard`s (Today/Tomorrow/weekday, rain %, low–high `RangeBar` vs week span), tap to expand `DayDetails` + that day's `HourlyForecastRow`; `DayLabel`, `TemperatureSpan` |
-| `presentation/settings/` | Placeholder for now |
+| `presentation/settings/` | `SettingsRoute`/`SettingsScreen` (sections: Location w/ Update, Commute times via M3 `TimePicker` dialog, Display: °C/°F + theme `SegmentedButton`s, About: Privacy, Open-Meteo attribution link, version), `SettingsViewModel`, `PrivacyScreen` (route `PrivacyRoute`, keeps Settings tab selected) |
+| `presentation/components/` (more) | `LocalUserPreferences` (provided in `MainActivity`; use `temperatureText()` not `formatTemperature()` in UI), `SystemIntents` (`LOCATION_PERMISSION`, `hasLocationPermission`, `openSettings`, `openUrl`) |
 | `ui/theme/` | Custom light/dark colours, typography, shapes; `WeatherBackdrop.forMood(WeatherMood, dark)` pastel/deep gradients with high-contrast content colour; `LocalDarkTheme` |
 
-Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVM — use in-memory for multi-write tests). JSON fixture: `test/resources/openmeteo/forecast_sample.json`. Currently **161 tests**, all passing; lint clean.
+Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVM — use in-memory for multi-write tests). JSON fixture: `test/resources/openmeteo/forecast_sample.json`. Currently **166 tests**, all passing; lint clean.
 
 ## 6. Key behaviour & decisions
 
@@ -108,12 +110,12 @@ Done (commit):
 8. 7-day forecast + day details (`ab4f55d`)
 9. Rain timing + umbrella recommendation (`40fff9c`)
 10. Commute summary ("Plan your day") (`c61de46`)
-11. Offline cache + "last updated"
+11. Offline cache + "last updated" (`600339d`)
+12. Settings (units, theme, commute times, privacy, about)
 
 Next (in order, adapt if needed):
 
-12. Daily ~7:00 notification (WorkManager, no exact alarms, POST_NOTIFICATIONS on 13+)
-13. Settings (notification on/off + time, °C/°F, theme, location, about, privacy)
+13. Daily ~7:00 notification (WorkManager, no exact alarms, POST_NOTIFICATIONS on 13+) + notification on/off and time rows in Settings (extend `UserPreferences`)
 14. Accessibility pass, error-handling polish, UI polish, docs, final QA
 
 ## 8. Open items / notes

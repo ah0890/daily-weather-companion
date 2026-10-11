@@ -88,7 +88,7 @@ private fun HourCell(hour: HourlyForecast, timeLabel: String) {
     val notable = (chance ?: 0) >= NOTABLE_RAIN_CHANCE
     val condition = stringResource(hour.condition.labelRes)
     val description = buildString {
-        append(timeLabel).append(", ").append(condition).append(", ").append(formatTemperature(hour.temperatureC))
+        append(timeLabel).append(", ").append(condition).append(", ").append(temperatureText(hour.temperatureC))
         if (chance != null) append(", ").append(stringResource(R.string.hourly_rain_chance_description, chance))
         hour.windSpeedKmh?.let { append(", ").append(stringResource(R.string.hourly_wind_description, formatWindSpeed(it))) }
     }
@@ -121,7 +121,7 @@ private fun HourCell(hour: HourlyForecast, timeLabel: String) {
             )
             Text(text = hour.condition.emoji(hour.isDay), fontSize = 24.sp)
             Text(
-                text = formatTemperature(hour.temperatureC),
+                text = temperatureText(hour.temperatureC),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )

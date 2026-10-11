@@ -1,0 +1,57 @@
+package com.ah0890.dailyweather.data.local
+
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import com.ah0890.dailyweather.domain.model.CommuteTimes
+import com.ah0890.dailyweather.domain.model.TemperatureUnit
+import com.ah0890.dailyweather.domain.model.ThemeMode
+import com.ah0890.dailyweather.domain.model.UserPreferences
+import com.ah0890.dailyweather.testing.InMemoryPreferencesDataStore
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Test
+import java.time.LocalTime
+
+class DataStorePreferencesRepositoryTest {
+
+    @Test
+    fun `defaults apply when nothing is stored`() = runTest {
+        val repository = DataStorePreferencesRepository(InMemoryPreferencesDataStore())
+
+        assertEquals(UserPreferences(), repository.preferences.first())
+    }
+
+    @Test
+    fun `changes are stored and read back`() = runTest {
+        val repository = DataStorePreferencesRepository(InMemoryPreferencesDataStore())
+
+        repository.setTemperatureUnit(TemperatureUnit.Fahrenheit)
+        repository.setThemeMode(ThemeMode.Dark)
+        repository.setMorningCommute(LocalTime.of(7, 15))
+        repository.setEveningCommute(LocalTime.of(18, 45))
+
+        assertEquals(
+            UserPreferences(
+                temperatureUnit = TemperatureUnit.Fahrenheit,
+                themeMode = ThemeMode.Dark,
+                commuteTimes = CommuteTimes(LocalTime.of(7, 15), LocalTime.of(18, 45)),
+            ),
+            repository.preferences.first(),
+        )
+    }
+
+    @Test
+    fun `unknown or invalid stored values fall back to defaults`() = runTest {
+        val store = InMemoryPreferencesDataStore()
+        store.edit {
+            it[stringPreferencesKey("temperature_unit")] = "Kelvin"
+            it[stringPreferencesKey("theme_mode")] = ""
+            it[intPreferencesKey("commute_morning_minutes")] = -5
+            it[intPreferencesKey("commute_evening_minutes")] = 24 * 60
+        }
+
+        assertEquals(UserPreferences(), DataStorePreferencesRepository(store).preferences.first())
+    }
+}

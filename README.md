@@ -29,7 +29,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | 7-day forecast with expandable day details and hour-by-hour rain | ✅ Done |
 | Offline cache of the last forecast with "last updated" notice | ✅ Done |
 | Daily ~7:00 AM weather notification | Planned |
-| Settings: notification time, units, theme, location | Planned |
+| Settings: location, commute times, °C/°F, System/Light/Dark theme, privacy, about | ✅ Done |
 
 ## Screenshots
 
@@ -152,6 +152,12 @@ The last successfully found location is saved on the device in a private
 - The saved location is excluded from cloud backup and device transfer.
 
 Planned: use the saved location for the daily notification instead of tracking location in the background.
+
+## Settings and Privacy
+
+Settings are stored in a private DataStore file (`user_preferences`): temperature unit, theme and commute departure times. Forecasts are always kept in °C, so switching to °F is instant and needs no download. The in-app theme also drives the status-bar icon colours.
+
+The **Privacy** page (Settings → Privacy) explains in plain language that the app uses approximate location only, what is stored on the phone, that rounded coordinates go to Open-Meteo (which, like any website, sees the request's IP address) and to the phone's geocoder, and that there is no account, analytics or advertising. Settings → *Weather data by Open-Meteo.com* provides the attribution required by Open-Meteo's CC BY 4.0 licence.
 
 ## Notification System
 

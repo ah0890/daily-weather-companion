@@ -163,5 +163,4 @@
     <string name="forecast_hour_by_hour">Hour by hour</string>
 
     <string name="settings_title">Settings</string>
-    <string name="settings_empty">Notifications, units, theme and location preferences will be configurable here.</string>
 </resources>

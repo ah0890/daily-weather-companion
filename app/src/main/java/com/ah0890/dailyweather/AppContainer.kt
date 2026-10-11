@@ -6,10 +6,12 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.ah0890.dailyweather.data.local.DataStoreLocationRepository
+import com.ah0890.dailyweather.data.local.DataStorePreferencesRepository
 import com.ah0890.dailyweather.data.local.FileWeatherCache
 import com.ah0890.dailyweather.data.remote.openmeteo.OpenMeteoDataSource
 import com.ah0890.dailyweather.data.repository.DefaultWeatherRepository
 import com.ah0890.dailyweather.domain.repository.LocationRepository
+import com.ah0890.dailyweather.domain.repository.PreferencesRepository
 import com.ah0890.dailyweather.domain.repository.WeatherRepository
 import com.ah0890.dailyweather.location.AndroidLocationProvider
 import com.ah0890.dailyweather.location.GeocoderPlaceNameResolver
@@ -31,6 +33,15 @@ class AppContainer(context: Context) {
     }
 
     // DataStore requires a single instance per file for the whole process.
+    val preferencesRepository: PreferencesRepository by lazy {
+        DataStorePreferencesRepository(
+            PreferenceDataStoreFactory.create(
+                corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+                produceFile = { appContext.preferencesDataStoreFile("user_preferences") },
+            ),
+        )
+    }
+
     val locationRepository: LocationRepository by lazy {
         DataStoreLocationRepository(
             PreferenceDataStoreFactory.create(

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Settings -->
+    <string name="settings_section_location">Location</string>
+    <string name="settings_section_commute">Commute</string>
+    <string name="settings_section_display">Display</string>
+    <string name="settings_section_about">About</string>
+
+    <string name="settings_location_none">No location saved yet</string>
+    <string name="settings_location_update">Update location</string>
+    <string name="settings_location_hint">Your location is only looked up when you open the app or tap Update.</string>
+
+    <string name="settings_commute_morning">Morning departure</string>
+    <string name="settings_commute_evening">Evening departure</string>
+    <string name="settings_commute_hint">Used for the \"Plan your day\" card on the Today screen.</string>
+    <string name="settings_time_picker_ok">OK</string>
+    <string name="settings_time_picker_cancel">Cancel</string>
+
+    <string name="settings_temperature_unit">Temperature unit</string>
+    <string name="settings_unit_celsius">°C</string>
+    <string name="settings_unit_fahrenheit">°F</string>
+    <string name="settings_unit_celsius_description">Celsius</string>
+    <string name="settings_unit_fahrenheit_description">Fahrenheit</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+
+    <string name="settings_privacy">Privacy</string>
+    <string name="settings_privacy_summary">What the app stores and shares</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_data_source">Weather data by Open-Meteo.com</string>
+    <string name="settings_data_source_summary">Licensed under CC BY 4.0 · open-meteo.com</string>
+
+    <!-- Privacy -->
+    <string name="privacy_title">Privacy</string>
+    <string name="privacy_back">Back</string>
+    <string name="privacy_location_title">Location</string>
+    <string name="privacy_location_body">The app asks for approximate location only, and uses it only to find the forecast for your area. It is looked up once when you open the app (if your saved location is more than 6 hours old) or when you tap Update location. Your location is never tracked in the background.</string>
+    <string name="privacy_stored_title">What is stored on your phone</string>
+    <string name="privacy_stored_body">Your last location (coordinates rounded to about 1 km, the place name and when it was found), your settings, and the latest forecast so it can be shown offline. None of this is backed up to the cloud or copied to other devices.</string>
+    <string name="privacy_shared_title">What is shared</string>
+    <string name="privacy_shared_body">To get the forecast, your rounded coordinates are sent to Open-Meteo (open-meteo.com) over an encrypted connection. Like any website, Open-Meteo can see your device\'s IP address when the forecast is requested. To show a place name, the same rounded coordinates are passed to your phone\'s geocoding service, which on most phones is provided by Google.</string>
+    <string name="privacy_not_collected_title">What is not collected</string>
+    <string name="privacy_not_collected_body">There is no account and no sign-in. The app does not collect your name, email, contacts or other personal information, and contains no analytics or advertising. It has no server of its own.</string>
+    <string name="privacy_delete_title">Removing your data</string>
+    <string name="privacy_delete_body">Clearing the app\'s storage in system settings, or uninstalling the app, deletes everything it has stored. You can also turn off location access at any time; the app will keep using your saved location.</string>
+</resources>

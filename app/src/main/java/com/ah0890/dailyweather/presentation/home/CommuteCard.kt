@@ -27,8 +27,8 @@ import com.ah0890.dailyweather.domain.model.CommuteLegType
 import com.ah0890.dailyweather.domain.model.CommuteRain
 import com.ah0890.dailyweather.domain.model.CommuteSummary
 import com.ah0890.dailyweather.presentation.weather.emoji
-import com.ah0890.dailyweather.presentation.weather.formatTemperature
 import com.ah0890.dailyweather.presentation.weather.formatWindSpeed
+import com.ah0890.dailyweather.presentation.weather.temperatureText
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -88,7 +88,7 @@ private fun LegColumn(leg: CommuteLeg, timeFormatter: DateTimeFormatter, modifie
         }
         Text(
             text = buildString {
-                append(formatTemperature(leg.temperatureC))
+                append(temperatureText(leg.temperatureC))
                 leg.rainChance?.let { append(" · ").append(stringResource(R.string.commute_rain_chance, it)) }
             },
             style = MaterialTheme.typography.bodyMedium,
