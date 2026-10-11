@@ -2,7 +2,7 @@
 
 A calm, location-aware Android weather app built around one question: **what should I expect today, and do I need an umbrella?**
 
-> **Version 1.0.0** — all core features are implemented and covered by 191 unit tests. Built for personal daily use.
+> **Version 1.0.1** — all core features are implemented and covered by 192 unit tests. Built for personal daily use.
 
 ## Overview
 
@@ -246,7 +246,7 @@ Create a keystore once with `keytool -genkeypair -v -keystore release.jks -keyal
 ## Testing
 
 ```bash
-./gradlew testDebugUnitTest    # JVM unit tests (191)
+./gradlew testDebugUnitTest    # JVM unit tests (192)
 ./gradlew lintDebug            # Android Lint
 ```
 

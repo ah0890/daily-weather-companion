@@ -1,132 +1,111 @@
 # Project Context — Daily Weather Companion
 
-Quick-start context for continuing development. Read this first; open source files only when needed.
-Last updated: 2026-10-11 — **v1.0.0 complete**; all planned milestones done.
+Hand-over notes for continuing development in a new session. **Read this first**; open source files only when needed.
+Last updated: 2026-10-11 — **v1.0.1 released** (signed APK built); all planned milestones are done.
+
+> **Starting a new chat:** say *"Read context.md, then …"* followed by what you want (a new feature, a bug fix, a new APK).
+> The assistant should check `git status` / `git log -3` first and follow the working rules in section 2.
 
 ## 1. What this is
 
-Personal-use Android weather app answering: *"What should I expect today?"* and *"Do I need an umbrella / should I ride the motorcycle?"*
+Personal-use Android weather app answering *"What should I expect today?"* and *"Do I need an umbrella / should I ride the motorcycle?"*
 Priorities: today's weather → rain probability → rain timing → temperature → morning/evening conditions → 7-day → recommendation.
 Design: calm, premium, readable in sunlight, light + dark. Not a data dump.
 
-- Repo: <https://github.com/ah0890/daily-weather-companion> (branch `main`)
-- Package / applicationId: `com.ah0890.dailyweather`
-- Weather API: **Open-Meteo** (free, no API key). Place names: Android `Geocoder`.
+- Repo: <https://github.com/ah0890/daily-weather-companion> (branch `main`, public)
+- Package / applicationId: `com.ah0890.dailyweather` · current version **1.0.1 (versionCode 2)**
+- Weather API: **Open-Meteo** (free, no API key, CC BY 4.0 attribution shown in Settings). Place names: Android `Geocoder`.
 
 ## 2. Working rules (must follow)
 
-- Work one milestone at a time. After each: build → unit tests → lint → release build → secret scan → stage files **explicitly** → commit (conventional message) → `git push origin main` → continue with the next milestone. (Automatic commit/push requested by the owner on 2026-10-11; before that the owner ran Git manually.)
-- **No AI attribution** anywhere — no `Co-Authored-By` trailers. Never change git user config, never force-push or rewrite history, never stash/reset/clean.
-- Before starting a milestone, check `git status`; if unexpected uncommitted work exists, stop and report.
-- Keep the emulator **off** until the project is complete (owner's request) — verify with tests, lint and builds.
-- Never commit secrets; `local.properties` is git-ignored. Don't put real personal locations in tests (use London/Paris/Sydney).
-- Keep `README.md` and this file up to date in each milestone commit.
+- One milestone (or fix) at a time: build → unit tests → lint → release build → secret scan → stage files **explicitly** (never `git add .`) → conventional commit (`feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`) → `git push origin main`.
+  The owner authorised automatic commit/push on 2026-10-11; if they ask to go back to manual Git, give them the exact commands instead and wait for "DONE".
+- **No AI attribution** anywhere: no `Co-Authored-By` trailers, no mentions in commits/README. Never change git user config, never force-push or rewrite history, never stash/reset/clean the owner's work.
+- Before starting work, check `git status`; if unexpected uncommitted changes exist, stop and report.
+- Never commit secrets. Git-ignored: `local.properties`, `keystore.properties`, `*.jks`, `.env*`. Don't put real personal locations in tests (use London/Paris/Sydney).
+- Keep `README.md` and this file current in the same commit as the change they describe.
+- Emulator: the owner tends to close the window; ask before relying on it for long sessions.
 
-## 3. Environment (Windows 11, 8 GB RAM)
+## 3. Environment (Windows 11, 8 GB RAM, little space on C:)
 
-- JDK 21 (`JAVA_HOME` set). Build from terminal with `./gradlew` — installed Android Studio (2020.3) is too old to open the project.
-- Android SDK: `D:\Android\Sdk` (`ANDROID_HOME`), `local.properties` → `sdk.dir=D\:/Android/Sdk`.
-- Emulator AVD **Pixel** (API 36, google_apis x86_64, 2 GB RAM), data in `D:\Android\avd`; pointer file at `~/.android/avd/Pixel.ini`.
-- C: drive has little free space — keep SDK/emulator data on D:.
-
-Commands (Git Bash):
+- JDK 21 (`JAVA_HOME` set). Build from the terminal with `./gradlew` (installed Android Studio 2020.3 is too old to open the project).
+- Android SDK `D:\Android\Sdk` (`ANDROID_HOME`); `local.properties` → `sdk.dir=D\:/Android/Sdk`.
+- Emulator AVD **Pixel** (API 36, google_apis x86_64, 2 GB RAM), data in `D:\Android\avd`, pointer `~/.android/avd/Pixel.ini`.
 
 ```bash
 ./gradlew testDebugUnitTest lintDebug assembleDebug   # standard check (~2–5 min)
-./gradlew assembleRelease                              # verify R8/minified build
-./gradlew installDebug                                 # install on running emulator
+./gradlew assembleRelease                              # signed (if keystore.properties exists), minified release APK
+./gradlew installDebug                                 # install on running emulator/phone
 D:/Android/Sdk/emulator/emulator.exe -avd Pixel        # start emulator (boot ~2 min); run in background
 ```
 
 Gotchas:
 
-- After SDK path changes or odd `android.jar` errors: `./gradlew --stop` and delete `.gradle/configuration-cache`.
-- adb from Git Bash: prefix with `export MSYS_NO_PATHCONV=1` (otherwise `/sdcard/...` paths get mangled).
-- Emulator GPS only reports while a fix is sent: loop `adb emu geo fix -0.1278 51.5074` every ~1.5 s while the app is locating.
-- Find dialog buttons via `adb shell uiautomator dump /sdcard/ui.xml` + read bounds — positions vary (e.g. "Don't allow" vs "Only this time").
-- `pm clear com.ah0890.dailyweather` resets app data and permissions; `pm grant/revoke ... ACCESS_COARSE_LOCATION`.
-- Lint result can be stale for `local.properties`; use `--rerun-tasks` if needed.
-- The test console prints a harmless `android.util.Log isLoggable not mocked` warning from OkHttp.
+- Odd `android.jar`/config-cache errors: `./gradlew --stop` and delete `.gradle/configuration-cache`.
+- adb from Git Bash: `export MSYS_NO_PATHCONV=1` first (else `/sdcard/...` paths get mangled).
+- Shell heredocs strip backslashes: edit `strings.xml` with the Edit tool (or write Python scripts to a file) so `\'` survives.
+- Emulator GPS only reports while fixes are sent: loop `adb emu geo fix -0.1278 51.5074` every ~1.5 s while the app locates.
+- Dialog buttons move: find them with `adb shell uiautomator dump /sdcard/ui.xml` and read `bounds`. Compose items using `clearAndSetSemantics` don't show their text there.
+- Test the morning job now: `adb root`, `adb shell settings put global auto_time 0`, `adb shell date MMDDhhmmYYYY.ss` (just after the notification time), then `adb shell cmd jobscheduler run -f -n androidx.work.systemjobscheduler com.ah0890.dailyweather 0`; restore with `auto_time 1` and `adb unroot`.
+- `pm clear com.ah0890.dailyweather` resets data/permissions. A release-signed and a debug-signed build can't replace each other: `adb uninstall` first.
+- Harmless test-console warning: `android.util.Log isLoggable not mocked` (OkHttp).
 
-## 4. Tech stack (versions in `gradle/libs.versions.toml`)
+## 4. Releasing an APK
 
-AGP 9.4.1 (built-in Kotlin, no `kotlin-android` plugin) · Gradle 9.8.1 · Kotlin 2.4.21 · Compose BOM 2026.09.00 (Material 3 1.4) · compileSdk/targetSdk 37 · minSdk 26 · Navigation Compose 2.10.2 (type-safe `@Serializable` routes) · Lifecycle 2.11 · Retrofit 3.0 + OkHttp 5.5 + kotlinx.serialization 1.11 · DataStore Preferences 1.2.1 · Tests: JUnit4, coroutines-test 1.11, mockwebserver3.
-Not used on purpose: Hilt (manual DI), Play Services location (framework `LocationManager`), material-icons-extended (only `material-icons-core`).
+- Keystore: `D:\Android\keys\dailyweather-release.jks` (alias `dailyweather`), **outside the repo**. Passwords are only in the git-ignored `keystore.properties` in the project root. Losing either means future updates can't install over the current app (uninstall/reinstall needed). The owner should keep a backup.
+- For every new APK: bump `versionCode` (+1) and `versionName` in `app/build.gradle.kts`, run the standard checks, `./gradlew assembleRelease`, verify with `D:/Android/Sdk/build-tools/37.0.0/apksigner.bat verify app/build/outputs/apk/release/app-release.apk`, copy to `D:\DailyWeather\DailyWeather-<version>.apk`.
+- Latest: `D:\DailyWeather\DailyWeather-1.0.1.apk` (1.9 MB, APK Signature Scheme v2).
 
-## 5. Architecture
+## 5. Tech stack (versions in `gradle/libs.versions.toml`)
+
+AGP 9.4.1 (built-in Kotlin) · Gradle 9.8.1 · Kotlin 2.4.21 · Compose BOM 2026.09.00 (Material 3 1.4) · compileSdk/targetSdk 37 · minSdk 26 · Navigation Compose 2.10.2 (type-safe `@Serializable` routes) · Lifecycle 2.11 · Retrofit 3.0 + OkHttp 5.5 + kotlinx.serialization 1.11 · DataStore Preferences 1.2.1 · WorkManager 2.12 · Tests: JUnit4, coroutines-test 1.11, mockwebserver3.
+Deliberately not used: Hilt (manual DI), Room (single-record JSON cache), Play Services location (framework `LocationManager`), material-icons-extended.
+
+## 6. Architecture
 
 ```text
 UI (Compose) → ViewModel (StateFlow) → Repository interface (domain) → data sources (remote / local)
 ```
 
-`HomeViewModel` is created once in `DailyWeatherApp` (activity scope) and shared by Today and 7 days.
-Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons). ViewModels use `viewModelFactory { initializer { … APPLICATION_KEY … } }`.
+Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons); the Application also ensures the morning job is scheduled on every start. ViewModels use `viewModelFactory { initializer { … APPLICATION_KEY … } }`. `HomeViewModel` is created once in `DailyWeatherApp` (activity scope) and shared by Today, 7 days and Settings.
 
 | Path (`app/src/main/java/com/ah0890/dailyweather/`) | Purpose |
 | --- | --- |
-| `MainActivity.kt` | Collects preferences → `LocalUserPreferences`, resolves theme (System/Light/Dark) and re-applies edge-to-edge bar styles |
-| `AppContainer.kt` | Wires `LocationProvider`, `PlaceNameResolver`, `WeatherRepository` (Open-Meteo), `LocationRepository` (DataStore `saved_location`) |
-| `domain/model/` | `WeatherForecast`, `CurrentWeather`, `HourlyForecast`, `DailyForecast` (metric units, location-local `LocalDateTime`), `WeatherCondition` (+`isPrecipitation`), `Coordinates` (validated; `approximate()` = 2 decimals), `LocationData`, `SavedLocation`, `WeatherResult` (`Success(forecast, fetchedAt)` / `Failure(WeatherError)`) |
-| `domain/model/` (rain) | `RainInformation` (max %, peak time, total mm, `RainPeriod`s), `WeatherRecommendation` (`UmbrellaAdvice` Recommended/Consider/NotNeeded), `TodayOutlook` |
-| `domain/usecase/RainAnalysis.kt` | Pure rules: ≥40% = rain likely, periods merge across 1 dry hour; umbrella ≥60% or raining now → Recommended, ≥30% or ≥1 mm → Consider; window = rest of today (≥6 h); `summary()` → `RainSummary` (NowUntil/Between/ChanceAround/LightRain/Low) — reuse for the notification |
-| `domain/model/Commute.kt` + `domain/usecase/CommuteAnalysis.kt` | `CommuteTimes` (default 08:00/17:00 — not yet user-configurable; Settings milestone must persist them and pass into `CurrentWeatherSection(commuteTimes=…)`), legs use departure hour + next hour, rain levels reuse umbrella thresholds, windy ≥ 39 km/h; after evening trip → tomorrow |
-| `domain/model/UserPreferences.kt` + `data/local/DataStorePreferencesRepository.kt` | `TemperatureUnit`, `ThemeMode`, `CommuteTimes` in DataStore `user_preferences` (enums by name, times as minutes; invalid → defaults) |
-| `domain/repository/` | `WeatherRepository.getForecast(coords): WeatherResult` (never throws), `LocationRepository` (`savedLocation: Flow`, `save()`) |
-| `data/remote/openmeteo/` | `OpenMeteoApi` (single `v1/forecast` call: current + 7-day hourly + daily, `timezone=auto`), nullable DTOs, `OpenMeteoMapper` (validates, skips bad rows, WMO→condition), `OpenMeteoDataSource.create()` (timeouts, no logging) |
-| `data/repository/DefaultWeatherRepository.kt` | Saves each success to the cache; on failure returns `WeatherResult.Stale(cached, error)` if cached; `cachedForecast()` for instant start. Maps exceptions → `WeatherError` (NoConnection, Timeout, RateLimited, ServiceUnavailable, InvalidData, Unexpected); rethrows cancellation |
-| `data/local/WeatherCache.kt` | `FileWeatherCache` — one versioned JSON record (`files/weather_cache.json`), atomic temp-file move, matches by ~1 km coords, corrupt/old → null |
-| `data/local/DataStoreLocationRepository.kt` | Stores rounded lat/lon, name (≤100 chars), saved time; corrupt → null |
-| `location/` | `AndroidLocationProvider` (one-shot fix: fused/network 10 s → GPS 20 s on API 31+ → last-known ≤3 h), `GeocoderPlaceNameResolver` (rounded coords, 10 s timeout) |
-| `notifications/` | `NotificationSchedule` (pure: `nextRun` by calendar/DST-safe, `isTooLate` > 3 h), `DailySummary` (pure content from forecast), `DailySummaryWork` (testable run: disabled/blocked/no location/too late/retry ×3/stale ≤ 6 h → `Outcome`), `DailyWeatherWorker` (CoroutineWorker; re-schedules next run with APPEND_OR_REPLACE, never returns failure), `WorkManagerNotificationScheduler` (unique work `daily_weather_summary`; KEEP on app start, REPLACE on settings change), `AndroidDailySummaryNotifier` (channel `daily_summary`, BigText) |
-| `presentation/home/` | `HomeRoute` (permission launcher, resume check, settings intents) + stateless `HomeScreen(state, weather, HomeActions)` in a `PullToRefreshBox`; `HomeViewModel` (location + weather); `LocationUiState(location, source Saved/Current, status)`; `WeatherUiState` (Idle/Loading/Loaded(+isRefreshing, refreshError)/Error); `CurrentWeatherSection` (hero card → `TodayOutlookCard` → `CommuteCard` → hourly → details; loading/error/refresh-failed); now in `presentation/weather/` |
-| `presentation/components/` | `RelativeAge` ("updated 3 hours ago") |
-| `presentation/weather/` | Shared weather UI: `ConditionUi` (condition → `WeatherMood`, emoji, label), `WeatherFormatting` (°, km/h, mm, compass, visibility, UV band), `HourlyForecastRow` (LazyRow, rain bar, ≥50% highlighted, bleeds to edge), `WeatherErrorCard` |
-| `presentation/forecast/` | `ForecastRoute`/`ForecastScreen`: LazyColumn of `DayCard`s (Today/Tomorrow/weekday, rain %, low–high `RangeBar` vs week span), tap to expand `DayDetails` + that day's `HourlyForecastRow`; `DayLabel`, `TemperatureSpan` |
-| `presentation/settings/` | `SettingsRoute`/`SettingsScreen` (sections: Location w/ Update, Commute times via M3 `TimePicker` dialog, Display: °C/°F + theme `SegmentedButton`s, About: Privacy, Open-Meteo attribution link, version), `SettingsViewModel`, `PrivacyScreen` (route `PrivacyRoute`, keeps Settings tab selected) |
-| `presentation/components/` (more) | `LocalUserPreferences` (provided in `MainActivity`; use `temperatureText()` not `formatTemperature()` in UI), `SystemIntents` (`LOCATION_PERMISSION`, `hasLocationPermission`, `openSettings`, `openUrl`) |
-| `ui/theme/` | Custom light/dark colours, typography, shapes; `WeatherBackdrop.forMood(WeatherMood, dark)` pastel/deep gradients with high-contrast content colour; `LocalDarkTheme` |
+| `MainActivity.kt` | Collects preferences → `LocalUserPreferences`; resolves theme (System/Light/Dark) and status-bar style |
+| `AppContainer.kt` | Location provider/resolver, `WeatherRepository` (Open-Meteo + file cache), `LocationRepository` (DataStore `saved_location`), `PreferencesRepository` (DataStore `user_preferences`), `NotificationScheduler`, `DailySummaryNotifier` |
+| `domain/model/` | `WeatherForecast` (+`today`, `upcomingHours()`, `hoursOn()`, `advancedTo(now)`), `CurrentWeather`, `HourlyForecast`, `DailyForecast` (metric, location-local times), `WeatherCondition`, `Coordinates` (`approximate()` = 2 decimals), `LocationData`, `SavedLocation`, `WeatherResult` (Success/Stale/Failure + `WeatherError`), `RainInformation`, `WeatherRecommendation`/`UmbrellaAdvice`/`TodayOutlook`, `Commute*`, `UserPreferences` |
+| `domain/usecase/` | `RainAnalysis` (≥40% likely; periods merge across 1 dry hour; ≥60% or raining → umbrella Recommended, ≥30% or ≥1 mm → Consider; rest of today, ≥6 h; `summary()` → `RainSummary`), `CommuteAnalysis` (departure hour + next; windy ≥39 km/h; after evening trip → tomorrow) |
+| `data/remote/openmeteo/` | `OpenMeteoApi` (one `v1/forecast` call incl. hourly `apparent_temperature`), nullable DTOs, `OpenMeteoMapper` (validates, skips bad rows, WMO → condition), `OpenMeteoDataSource.create()` (timeouts, no logging) |
+| `data/repository/DefaultWeatherRepository.kt` | Caches each success; failure → `Stale(cached, error)` or `Failure`; `cachedForecast()`; exception → `WeatherError` |
+| `data/local/` | `FileWeatherCache` (versioned JSON, atomic move, ~1 km match), `DataStoreLocationRepository`, `DataStorePreferencesRepository` (units, theme, commute times, notification on/time, prompt dismissed) |
+| `location/` | `AndroidLocationProvider` (one fix: fused/network 10 s → GPS 20 s on 12+ → last-known ≤3 h; invalid coords → unavailable), `GeocoderPlaceNameResolver` |
+| `notifications/` | `NotificationSchedule` (pure, DST-safe `nextRun`, `isTooLate` > 3 h), `DailySummary`, `DailySummaryWork` (testable; never throws; retry ×3, stale ≤6 h), `DailyWeatherWorker` (re-queues next run with APPEND_OR_REPLACE, never fails), `WorkManagerNotificationScheduler` (unique work `daily_weather_summary`; KEEP on app start, REPLACE on settings change), `AndroidDailySummaryNotifier` (channel `daily_summary`) |
+| `presentation/home/` | `HomeRoute`/`HomeScreen` (pull-to-refresh), `HomeViewModel` (location + weather), `LocationUiState`, `WeatherUiState`, `CurrentWeatherSection` (crossfade: hero → stale notice → `TodayOutlookCard` → `CommuteCard` → hourly → details), `NotificationPromptCard` |
+| `presentation/forecast/` | 7-day `DayCard`s with range bars, expandable details + that day's hourly row; `DayLabel`, `TemperatureSpan` |
+| `presentation/settings/` | Settings (location, morning summary switch/time, commute times, °C/°F, theme, privacy, Open-Meteo link, version), `SettingsViewModel`, `PrivacyScreen` |
+| `presentation/weather/` | Shared: `ConditionUi` (mood/emoji/label; night icons never show a sun), `WeatherFormatting` (use `temperatureText()` in UI for the user's unit), `HourlyForecastRow`, `WeatherErrorCard`, `StaleForecastNotice` |
+| `presentation/components/` | `RelativeAge`, `LocalUserPreferences`, `SystemIntents` (permissions, settings/URL intents, notification helpers) |
+| `ui/theme/` | Colours, typography, shapes, `WeatherBackdrop`, `LocalDarkTheme`, `ColorScheme.cardContainer` |
 
-Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVM — use in-memory for multi-write tests). JSON fixture: `test/resources/openmeteo/forecast_sample.json`. Currently **191 tests**, all passing; lint clean.
+Tests (`app/src/test/...`): **192 tests**, all passing; lint clean. Helpers in `testing/`: `SampleForecasts`, `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVMs). Create ViewModels *after* `MainDispatcherRule` is active (use `by lazy` for fields).
 
-## 6. Key behaviour & decisions
+## 7. Key behaviour & decisions
 
-- Permission: **ACCESS_COARSE_LOCATION only** + INTERNET + POST_NOTIFICATIONS (asked after explanation: one-time `NotificationPromptCard` on Today or Settings switch). No fine/background location. `usesCleartextTraffic=false`, backups fully disabled (`data_extraction_rules.xml`).
-- Location flow: explain card → system dialog only on tap. Denied once → "Try again"; permanent → "Open settings". Location services off → "Turn on location" (auto-retries on resume).
-- Weather loads when the location's (rounded) coordinates change, on pull-to-refresh/retry, and on resume if older than 30 min — never polled. On start the cache is shown first; a cache < 30 min old means no network call. Failed refresh / offline → last forecast + `StaleForecastNotice` ("Last updated: Today, 6:45 AM"; >1 h old → "may be out of date"). VM wraps every forecast with `advancedTo(now at location)` so stale data never shows past hours as now.
-- Saved location shown instantly on launch. Auto lookup only if none saved or saved > 6 h old (quiet; failure keeps saved). Manual refresh icon in header. Failures with a saved location show a small non-blocking notice.
-- Coordinates rounded to ~1 km before sending to Open-Meteo, Geocoder, or storage. Coordinates are never logged.
-- Cards use `MaterialTheme.colorScheme.cardContainer` (ui/theme; lighter than background in dark mode). Text-bearing fixed widths use `widthIn(min=…)` so large font scales don't clip.
-- All user text in `res/values/strings*.xml`; status text uses `liveRegion`; headings use `semantics { heading() }`.
+- Permissions: `ACCESS_COARSE_LOCATION` (foreground), `INTERNET`, `POST_NOTIFICATIONS` (asked after an explanation), plus WorkManager's boot/wake-lock/network-state; `FOREGROUND_SERVICE` removed. No precise/background location. HTTPS only; backups disabled.
+- Location: explain → dialog on tap; denied → Try again / Open settings; saved location shown instantly; auto-refresh only if none saved or > 6 h old; Update button in header and Settings.
+- Weather: fetched on location change, pull-to-refresh, or return after 30 min; cache shown first (fresh cache → no network). Offline/failure → last forecast + "Last updated…" notice. Forecasts are always moved forward to "now" at the location.
+- Morning summary: default ON at 07:00 (device time), arrives *around* that time (no exact alarms), uses the saved location, skipped if no data or > 3 h late.
+- Coordinates rounded to ~1 km before sending or storing; never logged.
 
-## 7. Milestones
+## 8. History and status
 
-Done (commit):
+Milestones (commit): foundation `1e590c7` · README `878384a` · domain + API `cab5bb3` · repository `11db3c0` · location permission `ca2215a` · saved location `5807709` · context notes `c2611b1` · current weather `a7eeeb5` · hourly `1fa4209` · 7-day `ab4f55d` · rain/umbrella `40fff9c` · commute `c61de46` · offline cache `600339d` · settings `cca313c` · notification `34839dd` · accessibility `a3ed22c`, `0e3a14e` · hardening `861b02f` · release prep `81249ec` · final README `2216528` · night icons `3bc276d` · 1.0.1 (header fix, version bump, this file).
 
-1. Project foundation, theme, navigation (`1e590c7`) + README (`878384a`)
-2. Domain models + Open-Meteo client (`cab5bb3`)
-3. Weather repository + error categorization (`11db3c0`)
-4. Location permission flow + one-shot lookup (`ca2215a`)
-5. Saved location + manual update (`5807709`)
-6. Current weather on Today screen (`a7eeeb5`)
-7. Hourly forecast timeline (`1fa4209`)
-8. 7-day forecast + day details (`ab4f55d`)
-9. Rain timing + umbrella recommendation (`40fff9c`)
-10. Commute summary ("Plan your day") (`c61de46`)
-11. Offline cache + "last updated" (`600339d`)
-12. Settings (units, theme, commute times, privacy, about) (`cca313c`)
-13. Daily morning notification (`34839dd`)
-14. Accessibility pass (`a3ed22c`, `0e3a14e`)
-15. Error-handling polish + weather crossfade (`861b02f`)
-16. Release prep: v1.0.0, optional signing via git-ignored `keystore.properties`, `FOREGROUND_SERVICE` removed (`81249ec`)
-17. Final README (permissions table, signing, test coverage, manual checklist, known limitations)
+Verified on the emulator (2026-10-11): Today, 7-day + expanded day, notification prompt → permission, scheduled job (+9 h to 07:00), forced morning run posted the notification and queued the next day, signed release build runs (location, download, navigation).
+Not yet verified on a device: offline/airplane mode, °F and Dark theme switching, reboot persistence, Privacy page in the release build.
 
-Next (owner decisions / optional):
+## 9. Ideas / open items
 
-- Manual QA on a device (README → "Manual test checklist"); the emulator was kept off from the current-weather milestone onwards at the owner's request, so later UI was verified by unit tests, lint and builds only.
-- Add screenshots to `docs/screenshots/`, choose a licence, create a signing keystore for release builds.
-- Future ideas: multiple locations, widget, alerts, air quality, Wear OS.
-
-## 8. Open items / notes
-
-- GitHub "Contributors" sidebar may still show a cached "claude" entry from early history (trailers were removed via `filter-branch`; API already shows only `ah0890`). It refreshes on its own.
-- README documents API, permissions, saved location, security, setup — keep it updated per milestone.
+- Owner to-dos: install the APK on the phone, back up the keystore + `keystore.properties`, add screenshots to `docs/screenshots/`, choose a licence (README says "all rights reserved").
+- Possible next features: multiple saved locations, home-screen widget, severe-weather alerts, air quality/pollen, UV alerts, custom notification days, Wear OS.
+- GitHub "Contributors" may briefly show a cached "claude" entry from rewritten early history; the API already lists only `ah0890`.
