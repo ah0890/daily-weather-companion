@@ -29,6 +29,7 @@ import com.ah0890.dailyweather.domain.model.CommuteSummary
 import com.ah0890.dailyweather.presentation.weather.emoji
 import com.ah0890.dailyweather.presentation.weather.formatWindSpeed
 import com.ah0890.dailyweather.presentation.weather.temperatureText
+import com.ah0890.dailyweather.ui.theme.cardContainer
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -39,7 +40,7 @@ fun CommuteCard(summary: CommuteSummary) {
 
     Card(
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.cardContainer),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {

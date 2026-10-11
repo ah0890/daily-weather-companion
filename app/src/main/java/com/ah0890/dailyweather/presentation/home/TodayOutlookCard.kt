@@ -28,6 +28,7 @@ import com.ah0890.dailyweather.domain.usecase.RainAnalysis
 import com.ah0890.dailyweather.domain.usecase.RainSummary
 import com.ah0890.dailyweather.presentation.weather.formatPrecipitation
 import com.ah0890.dailyweather.presentation.weather.rememberHourFormatter
+import com.ah0890.dailyweather.ui.theme.cardContainer
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -128,7 +129,7 @@ private fun adviceColors(advice: UmbrellaAdvice): Pair<Color, Color> = with(Mate
     when (advice) {
         UmbrellaAdvice.Recommended -> primaryContainer to onPrimaryContainer
         UmbrellaAdvice.Consider -> secondaryContainer to onSecondaryContainer
-        UmbrellaAdvice.NotNeeded -> surfaceContainerLowest to onSurface
+        UmbrellaAdvice.NotNeeded -> cardContainer to onSurface
     }
 }
 

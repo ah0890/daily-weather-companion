@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.HourlyForecast
+import com.ah0890.dailyweather.ui.theme.cardContainer
 import java.time.format.DateTimeFormatter
 
 /** Rain chance at or above which an hour is highlighted. */
@@ -99,11 +101,11 @@ private fun HourCell(hour: HourlyForecast, timeLabel: String) {
             containerColor = if (notable) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {
-                MaterialTheme.colorScheme.surfaceContainerLowest
+                MaterialTheme.colorScheme.cardContainer
             },
         ),
         modifier = Modifier
-            .width(72.dp)
+            .widthIn(min = 72.dp)
             .clearAndSetSemantics { contentDescription = description },
     ) {
         Column(

@@ -2,11 +2,14 @@ package com.ah0890.dailyweather.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 private val AppShapes = Shapes(
@@ -22,6 +25,15 @@ private val AppShapes = Shapes(
  * than the system setting, so weather surfaces should read it instead of isSystemInDarkTheme().
  */
 val LocalDarkTheme = staticCompositionLocalOf { false }
+
+/**
+ * Background for content cards. Material's "lowest" container is white in light mode but darker
+ * than the background in dark mode, which makes cards sink in; dark mode uses a lighter step instead.
+ */
+val ColorScheme.cardContainer: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = if (LocalDarkTheme.current) surfaceContainer else surfaceContainerLowest
 
 @Composable
 fun DailyWeatherTheme(

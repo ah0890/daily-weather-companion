@@ -51,6 +51,7 @@ import com.ah0890.dailyweather.presentation.weather.uvLevelRes
 import com.ah0890.dailyweather.ui.theme.LocalDarkTheme
 import com.ah0890.dailyweather.ui.theme.WeatherBackdrop
 import com.ah0890.dailyweather.ui.theme.WeatherMood
+import com.ah0890.dailyweather.ui.theme.cardContainer
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -198,7 +199,7 @@ private fun WeatherDetails(forecast: WeatherForecast) {
 private fun DetailTile(detail: Detail, modifier: Modifier = Modifier) {
     Card(
         shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.cardContainer),
         modifier = modifier.semantics(mergeDescendants = true) {},
     ) {
         Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {

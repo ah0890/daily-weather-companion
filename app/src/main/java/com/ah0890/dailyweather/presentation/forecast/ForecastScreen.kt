@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -66,6 +67,7 @@ import com.ah0890.dailyweather.presentation.weather.formatWindSpeed
 import com.ah0890.dailyweather.presentation.weather.labelRes
 import com.ah0890.dailyweather.presentation.weather.temperatureText
 import com.ah0890.dailyweather.presentation.weather.uvLevelRes
+import com.ah0890.dailyweather.ui.theme.cardContainer
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
@@ -218,7 +220,7 @@ private fun DayCard(
 
     Card(
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.cardContainer),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -247,21 +249,21 @@ private fun DayCard(
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.End,
-                modifier = Modifier.width(40.dp),
+                modifier = Modifier.widthIn(min = 40.dp),
             )
             Text(
                 text = low,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.End,
-                modifier = Modifier.width(36.dp),
+                modifier = Modifier.widthIn(min = 36.dp),
             )
             if (span != null) RangeBar(day, span, Modifier.width(56.dp))
             Text(
                 text = high,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.width(36.dp),
+                modifier = Modifier.widthIn(min = 36.dp),
             )
         }
 

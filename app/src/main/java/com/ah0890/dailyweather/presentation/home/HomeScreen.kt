@@ -64,6 +64,7 @@ import com.ah0890.dailyweather.presentation.components.openSettings
 import com.ah0890.dailyweather.presentation.components.text
 import com.ah0890.dailyweather.presentation.settings.SettingsViewModel
 import com.ah0890.dailyweather.ui.theme.DailyWeatherTheme
+import com.ah0890.dailyweather.ui.theme.cardContainer
 import java.time.Instant
 import java.time.LocalTime
 
@@ -350,7 +351,7 @@ private fun MessageCard(
 ) {
     Card(
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.cardContainer),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -386,7 +387,7 @@ private fun MessageCard(
 private fun LocatingCard() {
     Card(
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.cardContainer),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(

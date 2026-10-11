@@ -26,13 +26,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.WeatherError
+import com.ah0890.dailyweather.ui.theme.cardContainer
 
 /** Full-size message for a forecast that couldn't be loaded, with a retry button. */
 @Composable
 fun WeatherErrorCard(error: WeatherError, onRetry: () -> Unit) {
     Card(
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.cardContainer),
         modifier = Modifier
             .fillMaxWidth()
             .semantics { liveRegion = LiveRegionMode.Polite },

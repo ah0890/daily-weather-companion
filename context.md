@@ -1,7 +1,7 @@
 # Project Context — Daily Weather Companion
 
 Quick-start context for continuing development. Read this first; open source files only when needed.
-Last updated: 2026-10-11 (after the daily-notification milestone).
+Last updated: 2026-10-11 (after the accessibility pass).
 
 ## 1. What this is
 
@@ -95,7 +95,8 @@ Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `FakeWea
 - Weather loads when the location's (rounded) coordinates change, on pull-to-refresh/retry, and on resume if older than 30 min — never polled. On start the cache is shown first; a cache < 30 min old means no network call. Failed refresh / offline → last forecast + `StaleForecastNotice` ("Last updated: Today, 6:45 AM"; >1 h old → "may be out of date"). VM wraps every forecast with `advancedTo(now at location)` so stale data never shows past hours as now.
 - Saved location shown instantly on launch. Auto lookup only if none saved or saved > 6 h old (quiet; failure keeps saved). Manual refresh icon in header. Failures with a saved location show a small non-blocking notice.
 - Coordinates rounded to ~1 km before sending to Open-Meteo, Geocoder, or storage. Coordinates are never logged.
-- All user text in `res/values/strings.xml`; status text uses `liveRegion`; headings use `semantics { heading() }`.
+- Cards use `MaterialTheme.colorScheme.cardContainer` (ui/theme; lighter than background in dark mode). Text-bearing fixed widths use `widthIn(min=…)` so large font scales don't clip.
+- All user text in `res/values/strings*.xml`; status text uses `liveRegion`; headings use `semantics { heading() }`.
 
 ## 7. Milestones
 
@@ -113,11 +114,12 @@ Done (commit):
 10. Commute summary ("Plan your day") (`c61de46`)
 11. Offline cache + "last updated" (`600339d`)
 12. Settings (units, theme, commute times, privacy, about) (`cca313c`)
-13. Daily morning notification
+13. Daily morning notification (`34839dd`)
+14. Accessibility pass (large-text min widths, dark-mode `cardContainer`)
 
 Next (in order, adapt if needed):
 
-14. Accessibility pass, error-handling polish, UI polish, docs, final QA
+15. Error-handling/UI polish, docs, final QA + 1.0.0
 
 ## 8. Open items / notes
 

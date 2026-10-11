@@ -65,6 +65,7 @@ import com.ah0890.dailyweather.presentation.components.openNotificationSettings
 import com.ah0890.dailyweather.presentation.components.openUrl
 import com.ah0890.dailyweather.presentation.components.text
 import com.ah0890.dailyweather.presentation.home.HomeViewModel
+import com.ah0890.dailyweather.ui.theme.cardContainer
 import java.time.Instant
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -338,7 +339,7 @@ private fun Section(title: Int, content: @Composable () -> Unit) {
         )
         Card(
             shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.cardContainer),
             modifier = Modifier.fillMaxWidth(),
         ) { content() }
     }
