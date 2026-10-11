@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.WeatherForecast
+import com.ah0890.dailyweather.domain.usecase.RainAnalysis
 import com.ah0890.dailyweather.presentation.components.RelativeAge
 import com.ah0890.dailyweather.presentation.components.text
 import com.ah0890.dailyweather.presentation.weather.HourlyForecastRow
@@ -69,6 +70,8 @@ fun CurrentWeatherSection(state: WeatherUiState, edgePadding: Dp, onRetry: () ->
         is WeatherUiState.Loaded -> {
             CurrentWeatherCard(state.forecast, state.fetchedAt)
             if (state.refreshError != null) RefreshFailedNotice(state.fetchedAt)
+            val outlook = remember(state.forecast) { RainAnalysis.outlookForRestOfToday(state.forecast) }
+            TodayOutlookCard(outlook, now = state.forecast.current.time)
             HourlyForecastRow(
                 hours = state.forecast.upcomingHours(),
                 title = stringResource(R.string.hourly_title),

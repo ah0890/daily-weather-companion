@@ -24,7 +24,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | Saved location with manual update | ✅ Done |
 | Current weather with details, pull-to-refresh and error states | ✅ Done |
 | Hourly forecast timeline (next 24 h, rain chance, amount, wind) | ✅ Done |
-| Rain timing and umbrella recommendation | Planned |
+| "Today's outlook": rain timing and umbrella recommendation | ✅ Done |
 | Morning/evening commute summary | Planned |
 | 7-day forecast with expandable day details and hour-by-hour rain | ✅ Done |
 | Offline cache of the last successful forecast | Planned |
@@ -94,6 +94,20 @@ The planned provider is **[Open-Meteo](https://open-meteo.com/)**:
 Place names are resolved with Android's on-device `Geocoder`, so no separate geocoding service is needed.
 
 The data layer sits behind a repository interface, so the provider can be swapped later without touching the UI.
+
+## Rain Timing and Umbrella Advice
+
+Rain advice is computed from Open-Meteo's **hourly precipitation probability** (not guessed from daily totals), over the rest of the current day (at least the next 6 hours):
+
+| Rule | Value |
+| --- | --- |
+| An hour counts as "rain likely" | ≥ 40 % |
+| Rainy hours separated by a single drier hour | merged into one period |
+| Umbrella **recommended** | peak chance ≥ 60 %, or rain falling now |
+| **Consider** an umbrella | peak chance ≥ 30 %, or ≥ 1 mm expected |
+| **Probably not needed** | otherwise |
+
+The wording is deliberately non-absolute ("recommended", "consider", "probably not needed"). The logic lives in `domain/usecase/RainAnalysis.kt` and is unit-tested.
 
 ## Location Permissions
 

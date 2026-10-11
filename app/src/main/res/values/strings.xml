@@ -33,6 +33,23 @@
     <string name="weather_error_unexpected">Something went wrong while loading the weather.</string>
     <string name="weather_refresh_failed">Weather couldn\'t be updated. Showing the forecast from %1$s.</string>
 
+    <!-- Today's outlook -->
+    <string name="outlook_title">Today\'s outlook</string>
+    <string name="umbrella_recommended">Umbrella recommended</string>
+    <string name="umbrella_consider">Consider taking an umbrella</string>
+    <string name="umbrella_not_needed">Probably no umbrella needed</string>
+    <string name="rain_now_until">Rain is likely now and until about %1$s.</string>
+    <string name="rain_between">Rain is most likely between %1$s and %2$s.</string>
+    <string name="rain_chance_around">There\'s a %1$d%% chance of rain around %2$s.</string>
+    <string name="rain_light">Light rain is possible, about %1$s in total.</string>
+    <string name="rain_low">Rain chances stay low for the rest of the day.</string>
+    <string name="outlook_rain_chance">Rain chance</string>
+    <string name="outlook_rain_amount">Expected rain</string>
+    <string name="outlook_rain_times">Rain likely</string>
+    <string name="outlook_rain_times_none">Not expected</string>
+    <!-- A time range, e.g. "2 PM–5 PM" -->
+    <string name="time_range">%1$s–%2$s</string>
+
     <!-- Hourly forecast -->
     <string name="hourly_title">Next 24 hours</string>
     <string name="hourly_now">Now</string>

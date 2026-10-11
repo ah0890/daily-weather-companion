@@ -189,7 +189,7 @@ private fun Modifier.bleed(horizontal: Dp): Modifier = layout { measurable, cons
 
 /** "9 AM" or "09" style hour labels, following the device's 12/24-hour preference. */
 @Composable
-private fun rememberHourFormatter(): DateTimeFormatter {
+fun rememberHourFormatter(): DateTimeFormatter {
     val locale = LocalLocale.current.platformLocale
     return remember(locale) {
         DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "j"), locale)
