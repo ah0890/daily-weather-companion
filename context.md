@@ -1,7 +1,7 @@
 # Project Context — Daily Weather Companion
 
 Quick-start context for continuing development. Read this first; open source files only when needed.
-Last updated: 2026-10-11 (after the rain/umbrella milestone).
+Last updated: 2026-10-11 (after the commute milestone).
 
 ## 1. What this is
 
@@ -69,19 +69,20 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 | `domain/model/` | `WeatherForecast`, `CurrentWeather`, `HourlyForecast`, `DailyForecast` (metric units, location-local `LocalDateTime`), `WeatherCondition` (+`isPrecipitation`), `Coordinates` (validated; `approximate()` = 2 decimals), `LocationData`, `SavedLocation`, `WeatherResult` (`Success(forecast, fetchedAt)` / `Failure(WeatherError)`) |
 | `domain/model/` (rain) | `RainInformation` (max %, peak time, total mm, `RainPeriod`s), `WeatherRecommendation` (`UmbrellaAdvice` Recommended/Consider/NotNeeded), `TodayOutlook` |
 | `domain/usecase/RainAnalysis.kt` | Pure rules: ≥40% = rain likely, periods merge across 1 dry hour; umbrella ≥60% or raining now → Recommended, ≥30% or ≥1 mm → Consider; window = rest of today (≥6 h); `summary()` → `RainSummary` (NowUntil/Between/ChanceAround/LightRain/Low) — reuse for the notification |
+| `domain/model/Commute.kt` + `domain/usecase/CommuteAnalysis.kt` | `CommuteTimes` (default 08:00/17:00 — not yet user-configurable; Settings milestone must persist them and pass into `CurrentWeatherSection(commuteTimes=…)`), legs use departure hour + next hour, rain levels reuse umbrella thresholds, windy ≥ 39 km/h; after evening trip → tomorrow |
 | `domain/repository/` | `WeatherRepository.getForecast(coords): WeatherResult` (never throws), `LocationRepository` (`savedLocation: Flow`, `save()`) |
 | `data/remote/openmeteo/` | `OpenMeteoApi` (single `v1/forecast` call: current + 7-day hourly + daily, `timezone=auto`), nullable DTOs, `OpenMeteoMapper` (validates, skips bad rows, WMO→condition), `OpenMeteoDataSource.create()` (timeouts, no logging) |
 | `data/repository/DefaultWeatherRepository.kt` | Maps exceptions → `WeatherError` (NoConnection, Timeout, RateLimited, ServiceUnavailable, InvalidData, Unexpected); rethrows cancellation |
 | `data/local/DataStoreLocationRepository.kt` | Stores rounded lat/lon, name (≤100 chars), saved time; corrupt → null |
 | `location/` | `AndroidLocationProvider` (one-shot fix: fused/network 10 s → GPS 20 s on API 31+ → last-known ≤3 h), `GeocoderPlaceNameResolver` (rounded coords, 10 s timeout) |
-| `presentation/home/` | `HomeRoute` (permission launcher, resume check, settings intents) + stateless `HomeScreen(state, weather, HomeActions)` in a `PullToRefreshBox`; `HomeViewModel` (location + weather); `LocationUiState(location, source Saved/Current, status)`; `WeatherUiState` (Idle/Loading/Loaded(+isRefreshing, refreshError)/Error); `CurrentWeatherSection` (hero card → `TodayOutlookCard` → hourly → details; loading/error/refresh-failed); now in `presentation/weather/` |
+| `presentation/home/` | `HomeRoute` (permission launcher, resume check, settings intents) + stateless `HomeScreen(state, weather, HomeActions)` in a `PullToRefreshBox`; `HomeViewModel` (location + weather); `LocationUiState(location, source Saved/Current, status)`; `WeatherUiState` (Idle/Loading/Loaded(+isRefreshing, refreshError)/Error); `CurrentWeatherSection` (hero card → `TodayOutlookCard` → `CommuteCard` → hourly → details; loading/error/refresh-failed); now in `presentation/weather/` |
 | `presentation/components/` | `PlaceholderScreen`, `RelativeAge` ("updated 3 hours ago") |
 | `presentation/weather/` | Shared weather UI: `ConditionUi` (condition → `WeatherMood`, emoji, label), `WeatherFormatting` (°, km/h, mm, compass, visibility, UV band), `HourlyForecastRow` (LazyRow, rain bar, ≥50% highlighted, bleeds to edge), `WeatherErrorCard` |
 | `presentation/forecast/` | `ForecastRoute`/`ForecastScreen`: LazyColumn of `DayCard`s (Today/Tomorrow/weekday, rain %, low–high `RangeBar` vs week span), tap to expand `DayDetails` + that day's `HourlyForecastRow`; `DayLabel`, `TemperatureSpan` |
 | `presentation/settings/` | Placeholder for now |
 | `ui/theme/` | Custom light/dark colours, typography, shapes; `WeatherBackdrop.forMood(WeatherMood, dark)` pastel/deep gradients with high-contrast content colour; `LocalDarkTheme` |
 
-Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVM — use in-memory for multi-write tests). JSON fixture: `test/resources/openmeteo/forecast_sample.json`. Currently **125 tests**, all passing; lint clean.
+Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVM — use in-memory for multi-write tests). JSON fixture: `test/resources/openmeteo/forecast_sample.json`. Currently **136 tests**, all passing; lint clean.
 
 ## 6. Key behaviour & decisions
 
@@ -104,11 +105,11 @@ Done (commit):
 6. Current weather on Today screen (`a7eeeb5`)
 7. Hourly forecast timeline (`1fa4209`)
 8. 7-day forecast + day details (`ab4f55d`)
-9. Rain timing + umbrella recommendation
+9. Rain timing + umbrella recommendation (`40fff9c`)
+10. Commute summary ("Plan your day")
 
 Next (in order, adapt if needed):
 
-10. Daily commute summary (morning/evening)
 11. Offline cache (Room or DataStore) + "Last updated" / stale banner
 12. Daily ~7:00 notification (WorkManager, no exact alarms, POST_NOTIFICATIONS on 13+)
 13. Settings (notification on/off + time, °C/°F, theme, location, about, privacy)

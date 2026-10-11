@@ -50,6 +50,23 @@
     <!-- A time range, e.g. "2 PM–5 PM" -->
     <string name="time_range">%1$s–%2$s</string>
 
+    <!-- Commute -->
+    <string name="commute_title_today">Plan your day</string>
+    <string name="commute_title_tomorrow">Tomorrow\'s commute</string>
+    <string name="commute_morning">Morning</string>
+    <string name="commute_evening">Evening</string>
+    <!-- e.g. "Morning · 8:00 AM" -->
+    <string name="commute_leg_time">%1$s · %2$s</string>
+    <string name="commute_rain_dry">Dry</string>
+    <string name="commute_rain_possible">Rain possible</string>
+    <string name="commute_rain_likely">Rain likely</string>
+    <string name="commute_rain_chance">Rain %1$d%%</string>
+    <string name="commute_windy">Windy, %1$s</string>
+    <string name="commute_advice_rain_likely">Rain likely during your commute — consider rain gear or another way to travel.</string>
+    <string name="commute_advice_rain_possible">Rain possible on your commute — pack rain gear just in case.</string>
+    <string name="commute_advice_windy">Strong wind expected — take extra care if you ride.</string>
+    <string name="commute_advice_dry">Dry commute expected.</string>
+
     <!-- Hourly forecast -->
     <string name="hourly_title">Next 24 hours</string>
     <string name="hourly_now">Now</string>

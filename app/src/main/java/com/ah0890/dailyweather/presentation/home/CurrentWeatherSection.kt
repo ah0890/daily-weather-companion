@@ -33,7 +33,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ah0890.dailyweather.R
+import com.ah0890.dailyweather.domain.model.CommuteTimes
 import com.ah0890.dailyweather.domain.model.WeatherForecast
+import com.ah0890.dailyweather.domain.usecase.CommuteAnalysis
 import com.ah0890.dailyweather.domain.usecase.RainAnalysis
 import com.ah0890.dailyweather.presentation.components.RelativeAge
 import com.ah0890.dailyweather.presentation.components.text
@@ -62,7 +64,12 @@ import kotlin.math.roundToInt
  * @param edgePadding the screen's horizontal padding, so scrolling rows can reach the edges.
  */
 @Composable
-fun CurrentWeatherSection(state: WeatherUiState, edgePadding: Dp, onRetry: () -> Unit) {
+fun CurrentWeatherSection(
+    state: WeatherUiState,
+    edgePadding: Dp,
+    onRetry: () -> Unit,
+    commuteTimes: CommuteTimes = CommuteTimes(),
+) {
     when (state) {
         WeatherUiState.Idle -> Unit
         WeatherUiState.Loading -> LoadingCard()
@@ -72,6 +79,8 @@ fun CurrentWeatherSection(state: WeatherUiState, edgePadding: Dp, onRetry: () ->
             if (state.refreshError != null) RefreshFailedNotice(state.fetchedAt)
             val outlook = remember(state.forecast) { RainAnalysis.outlookForRestOfToday(state.forecast) }
             TodayOutlookCard(outlook, now = state.forecast.current.time)
+            val commute = remember(state.forecast, commuteTimes) { CommuteAnalysis.summary(state.forecast, commuteTimes) }
+            if (commute != null) CommuteCard(commute)
             HourlyForecastRow(
                 hours = state.forecast.upcomingHours(),
                 title = stringResource(R.string.hourly_title),

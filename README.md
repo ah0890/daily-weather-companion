@@ -25,7 +25,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | Current weather with details, pull-to-refresh and error states | ✅ Done |
 | Hourly forecast timeline (next 24 h, rain chance, amount, wind) | ✅ Done |
 | "Today's outlook": rain timing and umbrella recommendation | ✅ Done |
-| Morning/evening commute summary | Planned |
+| "Plan your day": morning/evening commute summary | ✅ Done |
 | 7-day forecast with expandable day details and hour-by-hour rain | ✅ Done |
 | Offline cache of the last successful forecast | Planned |
 | Daily ~7:00 AM weather notification | Planned |
@@ -107,7 +107,9 @@ Rain advice is computed from Open-Meteo's **hourly precipitation probability** (
 | **Consider** an umbrella | peak chance ≥ 30 %, or ≥ 1 mm expected |
 | **Probably not needed** | otherwise |
 
-The wording is deliberately non-absolute ("recommended", "consider", "probably not needed"). The logic lives in `domain/usecase/RainAnalysis.kt` and is unit-tested.
+**Commute ("Plan your day")** looks at the departure hour and the hour after it for the morning (default 8:00) and evening (default 17:00) trips, using the same rain thresholds, plus a warning for sustained wind ≥ 39 km/h — relevant when riding a motorcycle. After the evening trip, tomorrow's commute is shown.
+
+The wording is deliberately non-absolute ("recommended", "consider", "probably not needed"). The logic lives in `domain/usecase/RainAnalysis.kt` and `CommuteAnalysis.kt` and is unit-tested.
 
 ## Location Permissions
 
