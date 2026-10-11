@@ -79,6 +79,15 @@ class WeatherFormattingTest {
     }
 
     @Test
+    fun `night icons never show a sun`() {
+        val sunny = listOf("☀️", "🌤️", "⛅", "🌦️")
+        WeatherCondition.entries.forEach { condition ->
+            val icon = condition.emoji(isDay = false)
+            assertEquals("$condition at night shows $icon", false, icon in sunny)
+        }
+    }
+
+    @Test
     fun `wet conditions use the rain or storm moods`() {
         assertEquals(WeatherMood.Rain, WeatherCondition.Drizzle.mood(isDay = true))
         assertEquals(WeatherMood.Rain, WeatherCondition.RainShowers.mood(isDay = false))

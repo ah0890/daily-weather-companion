@@ -25,10 +25,11 @@ fun WeatherCondition.mood(isDay: Boolean): WeatherMood = when (this) {
 fun WeatherCondition.emoji(isDay: Boolean): String = when (this) {
     WeatherCondition.Clear -> if (isDay) "☀️" else "🌙"
     WeatherCondition.MainlyClear -> if (isDay) "🌤️" else "🌙"
-    WeatherCondition.PartlyCloudy -> "⛅"
+    // The sun-and-cloud emoji would show a sun at night, so night uses sun-free variants.
+    WeatherCondition.PartlyCloudy -> if (isDay) "⛅" else "☁️"
     WeatherCondition.Overcast -> "☁️"
     WeatherCondition.Fog -> "🌫️"
-    WeatherCondition.Drizzle, WeatherCondition.RainShowers -> "🌦️"
+    WeatherCondition.Drizzle, WeatherCondition.RainShowers -> if (isDay) "🌦️" else "🌧️"
     WeatherCondition.FreezingDrizzle, WeatherCondition.Rain, WeatherCondition.FreezingRain -> "🌧️"
     WeatherCondition.Snow, WeatherCondition.SnowShowers -> "🌨️"
     WeatherCondition.Thunderstorm -> "⛈️"
