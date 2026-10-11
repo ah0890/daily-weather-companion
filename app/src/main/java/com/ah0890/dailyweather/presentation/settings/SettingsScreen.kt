@@ -1,6 +1,5 @@
 package com.ah0890.dailyweather.presentation.settings
 
-import android.Manifest
 import android.text.format.DateFormat
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -63,6 +62,7 @@ import com.ah0890.dailyweather.presentation.components.hasLocationPermission
 import com.ah0890.dailyweather.presentation.components.needsNotificationPermission
 import com.ah0890.dailyweather.presentation.components.openNotificationSettings
 import com.ah0890.dailyweather.presentation.components.openUrl
+import com.ah0890.dailyweather.presentation.components.requestNotificationPermission
 import com.ah0890.dailyweather.presentation.components.text
 import com.ah0890.dailyweather.presentation.home.HomeViewModel
 import com.ah0890.dailyweather.ui.theme.cardContainer
@@ -122,7 +122,7 @@ fun SettingsRoute(
             },
             setNotificationsEnabled = { enabled ->
                 if (enabled && needsNotificationPermission && !context.canPostNotifications()) {
-                    notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    notificationLauncher.requestNotificationPermission()
                 } else {
                     settingsViewModel.setDailyNotificationEnabled(enabled)
                 }

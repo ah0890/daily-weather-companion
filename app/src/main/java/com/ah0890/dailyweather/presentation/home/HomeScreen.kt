@@ -1,6 +1,5 @@
 package com.ah0890.dailyweather.presentation.home
 
-import android.Manifest
 import android.provider.Settings
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -61,6 +60,7 @@ import com.ah0890.dailyweather.presentation.components.canPostNotifications
 import com.ah0890.dailyweather.presentation.components.hasLocationPermission
 import com.ah0890.dailyweather.presentation.components.needsNotificationPermission
 import com.ah0890.dailyweather.presentation.components.openSettings
+import com.ah0890.dailyweather.presentation.components.requestNotificationPermission
 import com.ah0890.dailyweather.presentation.components.text
 import com.ah0890.dailyweather.presentation.settings.SettingsViewModel
 import com.ah0890.dailyweather.ui.theme.DailyWeatherTheme
@@ -126,7 +126,7 @@ fun HomeRoute(
             openAppSettings = { context.openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, withPackage = true) },
             openLocationSettings = { context.openSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS) },
             refreshWeather = viewModel::refreshWeather,
-            allowNotifications = { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+            allowNotifications = { notificationLauncher.requestNotificationPermission() },
             dismissNotificationPrompt = settingsViewModel::dismissNotificationPrompt,
         ),
         notificationPromptTime = preferences.dailyNotificationTime.takeIf { showNotificationPrompt },
