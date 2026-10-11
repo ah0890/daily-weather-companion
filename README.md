@@ -22,7 +22,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | Bottom navigation: Today · 7 days · Settings | ✅ Done |
 | Location permission flow and one-shot current location | ✅ Done |
 | Saved location with manual update | ✅ Done |
-| Current weather for the saved/current location | Planned |
+| Current weather with details, pull-to-refresh and error states | ✅ Done |
 | Hourly forecast with rain probability timeline | Planned |
 | Rain timing and umbrella recommendation | Planned |
 | Morning/evening commute summary | Planned |

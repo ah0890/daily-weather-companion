@@ -15,7 +15,11 @@ data class WeatherForecast(
     val current: CurrentWeather,
     val hourly: List<HourlyForecast>,
     val daily: List<DailyForecast>,
-)
+) {
+    /** Today's summary at the forecast location, falling back to the first day available. */
+    val today: DailyForecast?
+        get() = daily.firstOrNull { it.date == current.time.toLocalDate() } ?: daily.firstOrNull()
+}
 
 data class CurrentWeather(
     val time: LocalDateTime,

@@ -1,7 +1,7 @@
 # Project Context — Daily Weather Companion
 
 Quick-start context for continuing development. Read this first; open source files only when needed.
-Last updated: 2026-10-10 (after the saved-location milestone, commit `5807709`).
+Last updated: 2026-10-11 (after the current-weather milestone).
 
 ## 1. What this is
 
@@ -64,24 +64,26 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 | Path (`app/src/main/java/com/ah0890/dailyweather/`) | Purpose |
 | --- | --- |
 | `MainActivity.kt` | Edge-to-edge, `DailyWeatherTheme { DailyWeatherApp() }` |
-| `AppContainer.kt` | Wires `LocationProvider`, `PlaceNameResolver`, `LocationRepository` (DataStore `saved_location`) |
+| `AppContainer.kt` | Wires `LocationProvider`, `PlaceNameResolver`, `WeatherRepository` (Open-Meteo), `LocationRepository` (DataStore `saved_location`) |
 | `domain/model/` | `WeatherForecast`, `CurrentWeather`, `HourlyForecast`, `DailyForecast` (metric units, location-local `LocalDateTime`), `WeatherCondition` (+`isPrecipitation`), `Coordinates` (validated; `approximate()` = 2 decimals), `LocationData`, `SavedLocation`, `WeatherResult` (`Success(forecast, fetchedAt)` / `Failure(WeatherError)`) |
 | `domain/repository/` | `WeatherRepository.getForecast(coords): WeatherResult` (never throws), `LocationRepository` (`savedLocation: Flow`, `save()`) |
 | `data/remote/openmeteo/` | `OpenMeteoApi` (single `v1/forecast` call: current + 7-day hourly + daily, `timezone=auto`), nullable DTOs, `OpenMeteoMapper` (validates, skips bad rows, WMO→condition), `OpenMeteoDataSource.create()` (timeouts, no logging) |
 | `data/repository/DefaultWeatherRepository.kt` | Maps exceptions → `WeatherError` (NoConnection, Timeout, RateLimited, ServiceUnavailable, InvalidData, Unexpected); rethrows cancellation |
 | `data/local/DataStoreLocationRepository.kt` | Stores rounded lat/lon, name (≤100 chars), saved time; corrupt → null |
 | `location/` | `AndroidLocationProvider` (one-shot fix: fused/network 10 s → GPS 20 s on API 31+ → last-known ≤3 h), `GeocoderPlaceNameResolver` (rounded coords, 10 s timeout) |
-| `presentation/home/` | `HomeRoute` (permission launcher, resume check, settings intents) + stateless `HomeScreen(state, HomeActions)`; `HomeViewModel`; `LocationUiState(location, source Saved/Current, status)` |
+| `presentation/home/` | `HomeRoute` (permission launcher, resume check, settings intents) + stateless `HomeScreen(state, weather, HomeActions)` in a `PullToRefreshBox`; `HomeViewModel` (location + weather); `LocationUiState(location, source Saved/Current, status)`; `WeatherUiState` (Idle/Loading/Loaded(+isRefreshing, refreshError)/Error); `CurrentWeatherSection` (hero card, details grid, loading/error/refresh-failed) |
 | `presentation/components/` | `PlaceholderScreen`, `RelativeAge` ("updated 3 hours ago") |
+| `presentation/weather/` | `ConditionUi` (condition → `WeatherMood`, emoji, label) and `WeatherFormatting` (°, km/h, compass, visibility, UV band) |
 | `presentation/forecast/`, `presentation/settings/` | Placeholders for now |
 | `ui/theme/` | Custom light/dark colours, typography, shapes; `WeatherBackdrop.forMood(WeatherMood, dark)` pastel/deep gradients with high-contrast content colour; `LocalDarkTheme` |
 
-Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVM — use in-memory for multi-write tests). JSON fixture: `test/resources/openmeteo/forecast_sample.json`. Currently **72 tests**, all passing; lint clean.
+Tests (`app/src/test/...`): `testing/SampleForecasts` (domain fixture), `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVM — use in-memory for multi-write tests). JSON fixture: `test/resources/openmeteo/forecast_sample.json`. Currently **94 tests**, all passing; lint clean.
 
 ## 6. Key behaviour & decisions
 
 - Permission: **ACCESS_COARSE_LOCATION only** + INTERNET. No fine/background location. `usesCleartextTraffic=false`, backups fully disabled (`data_extraction_rules.xml`).
 - Location flow: explain card → system dialog only on tap. Denied once → "Try again"; permanent → "Open settings". Location services off → "Turn on location" (auto-retries on resume).
+- Weather loads when the location's (rounded) coordinates change, on pull-to-refresh/retry, and on resume if older than 30 min — never polled. A failed refresh keeps the last forecast with a notice. Not yet persisted (offline cache is a later milestone).
 - Saved location shown instantly on launch. Auto lookup only if none saved or saved > 6 h old (quiet; failure keeps saved). Manual refresh icon in header. Failures with a saved location show a small non-blocking notice.
 - Coordinates rounded to ~1 km before sending to Open-Meteo, Geocoder, or storage. Coordinates are never logged.
 - All user text in `res/values/strings.xml`; status text uses `liveRegion`; headings use `semantics { heading() }`.
@@ -95,10 +97,10 @@ Done (commit):
 3. Weather repository + error categorization (`11db3c0`)
 4. Location permission flow + one-shot lookup (`ca2215a`)
 5. Saved location + manual update (`5807709`)
+6. Current weather on Today screen (pending commit)
 
 Next (in order, adapt if needed):
 
-6. **Current weather on Today screen** — hero card with temp, condition, feels-like, high/low; loading/error states; `WeatherRepository` added to `AppContainer`
 7. Hourly forecast timeline (rain % per hour)
 8. 7-day forecast screen + day details
 9. Rain timing + umbrella recommendation (wording: "recommended / consider / probably not needed")

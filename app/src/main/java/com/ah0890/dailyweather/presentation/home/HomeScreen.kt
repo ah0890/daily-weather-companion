@@ -10,7 +10,6 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +32,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,7 +40,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -61,9 +60,6 @@ import com.ah0890.dailyweather.domain.model.SavedLocation
 import com.ah0890.dailyweather.presentation.components.RelativeAge
 import com.ah0890.dailyweather.presentation.components.text
 import com.ah0890.dailyweather.ui.theme.DailyWeatherTheme
-import com.ah0890.dailyweather.ui.theme.LocalDarkTheme
-import com.ah0890.dailyweather.ui.theme.WeatherBackdrop
-import com.ah0890.dailyweather.ui.theme.WeatherMood
 import java.time.Instant
 import java.time.LocalTime
 
@@ -73,6 +69,7 @@ private const val LOCATION_PERMISSION = Manifest.permission.ACCESS_COARSE_LOCATI
 @Composable
 fun HomeRoute(viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory)) {
     val state by viewModel.locationState.collectAsStateWithLifecycle()
+    val weather by viewModel.weatherState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = LocalActivity.current
 
@@ -87,11 +84,13 @@ fun HomeRoute(viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Facto
     // Re-checked on every resume so returning from system settings is picked up.
     LifecycleResumeEffect(viewModel) {
         viewModel.onPermissionChecked(context.hasLocationPermission())
+        viewModel.refreshWeatherIfStale()
         onPauseOrDispose { }
     }
 
     HomeScreen(
         state = state,
+        weather = weather,
         actions = HomeActions(
             requestPermission = { permissionLauncher.launch(LOCATION_PERMISSION) },
             updateLocation = {
@@ -103,6 +102,7 @@ fun HomeRoute(viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Facto
             },
             openAppSettings = { context.openSettings(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, withPackage = true) },
             openLocationSettings = { context.openSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS) },
+            refreshWeather = viewModel::refreshWeather,
         ),
     )
 }
@@ -113,39 +113,47 @@ class HomeActions(
     val updateLocation: () -> Unit = {},
     val openAppSettings: () -> Unit = {},
     val openLocationSettings: () -> Unit = {},
+    val refreshWeather: () -> Unit = {},
 )
 
 @Composable
 fun HomeScreen(
     state: LocationUiState,
+    weather: WeatherUiState,
     actions: HomeActions,
     modifier: Modifier = Modifier,
 ) {
     val greeting = remember { greetingFor(LocalTime.now().hour) }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+    PullToRefreshBox(
+        isRefreshing = (weather as? WeatherUiState.Loaded)?.isRefreshing == true,
+        onRefresh = actions.refreshWeather,
+        modifier = modifier.fillMaxSize(),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = stringResource(greeting),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.semantics { heading() },
-            )
-            LocationHeader(state, onUpdateLocation = actions.updateLocation)
-        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = stringResource(greeting),
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.semantics { heading() },
+                )
+                LocationHeader(state, onUpdateLocation = actions.updateLocation)
+            }
 
-        val location = state.location
-        if (location != null) {
-            LocatedCard(location.location, state.source)
-            SavedLocationNotice(state.status, actions)
-        } else {
-            NoLocationContent(state.status, actions)
+            val location = state.location
+            if (location != null) {
+                SavedLocationNotice(state.status, actions)
+                CurrentWeatherSection(weather, onRetry = actions.refreshWeather)
+            } else {
+                NoLocationContent(state.status, actions)
+            }
         }
     }
 }
@@ -361,33 +369,6 @@ private fun LocatingCard() {
     }
 }
 
-@Composable
-private fun LocatedCard(location: LocationData, source: LocationSource) {
-    val backdrop = WeatherBackdrop.forMood(WeatherMood.Clear, LocalDarkTheme.current)
-    val name = location.name ?: stringResource(
-        if (source == LocationSource.Current) R.string.location_current else R.string.location_saved,
-    )
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.extraLarge)
-            .background(backdrop.brush)
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.home_located_title, name),
-            style = MaterialTheme.typography.titleLarge,
-            color = backdrop.content,
-        )
-        Text(
-            text = stringResource(R.string.home_located_body),
-            style = MaterialTheme.typography.bodyLarge,
-            color = backdrop.content,
-        )
-    }
-}
-
 private fun Context.hasLocationPermission(): Boolean =
     ContextCompat.checkSelfPermission(this, LOCATION_PERMISSION) == PackageManager.PERMISSION_GRANTED
 
@@ -408,16 +389,21 @@ private val previewLocation = SavedLocation(
 @Composable
 private fun PermissionPreview() {
     DailyWeatherTheme {
-        HomeScreen(LocationUiState(status = LocationStatus.PermissionRequired(PermissionDenial.None)), HomeActions())
+        HomeScreen(
+            LocationUiState(status = LocationStatus.PermissionRequired(PermissionDenial.None)),
+            WeatherUiState.Idle,
+            HomeActions(),
+        )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun SavedLocationPreview() {
+private fun LoadingWeatherPreview() {
     DailyWeatherTheme {
         HomeScreen(
-            LocationUiState(previewLocation, LocationSource.Saved, LocationStatus.Failed(LocationFailure.Unavailable)),
+            LocationUiState(previewLocation, LocationSource.Saved, LocationStatus.Idle),
+            WeatherUiState.Loading,
             HomeActions(),
         )
     }

@@ -6,9 +6,12 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.ah0890.dailyweather.DailyWeatherApplication
+import com.ah0890.dailyweather.domain.model.Coordinates
 import com.ah0890.dailyweather.domain.model.LocationData
 import com.ah0890.dailyweather.domain.model.SavedLocation
+import com.ah0890.dailyweather.domain.model.WeatherResult
 import com.ah0890.dailyweather.domain.repository.LocationRepository
+import com.ah0890.dailyweather.domain.repository.WeatherRepository
 import com.ah0890.dailyweather.location.LocationProvider
 import com.ah0890.dailyweather.location.LocationResult
 import com.ah0890.dailyweather.location.PlaceNameResolver
@@ -16,8 +19,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.IOException
@@ -25,17 +32,21 @@ import java.time.Clock
 import java.time.Duration
 
 /**
- * Drives the location part of the Today screen.
+ * Drives the Today screen: which location to show, and the forecast for it.
  *
  * The saved location is shown immediately. A fresh one-shot lookup only happens when nothing is
  * saved, when the saved location is older than [STALE_AFTER], or when the user asks for it.
  * Permission dialogs live in the UI layer, which reports back through [onPermissionChecked] and
  * [onPermissionResult].
+ *
+ * The forecast is loaded whenever the location changes, on request, and on return to the screen
+ * once it is older than [WEATHER_REFRESH_AFTER]; it is never polled.
  */
 class HomeViewModel(
     private val locationProvider: LocationProvider,
     private val placeNameResolver: PlaceNameResolver,
     private val locationRepository: LocationRepository,
+    private val weatherRepository: WeatherRepository,
     private val clock: Clock = Clock.systemUTC(),
 ) : ViewModel() {
 
@@ -54,6 +65,51 @@ class HomeViewModel(
         }.stateIn(viewModelScope, SharingStarted.Eagerly, LocationUiState())
 
     private var locateJob: Job? = null
+
+    private val weather = MutableStateFlow<WeatherUiState>(WeatherUiState.Idle)
+    val weatherState: StateFlow<WeatherUiState> = weather.asStateFlow()
+
+    private var weatherJob: Job? = null
+
+    /** Coordinates the current [weather] state belongs to. */
+    private var weatherCoordinates: Coordinates? = null
+
+    init {
+        viewModelScope.launch {
+            locationState
+                .map { it.location?.location?.coordinates?.approximate() }
+                .filterNotNull()
+                .distinctUntilChanged()
+                .collect { loadWeather(it) }
+        }
+    }
+
+    /** Pull-to-refresh or retry. */
+    fun refreshWeather() {
+        weatherCoordinates?.let { loadWeather(it) }
+    }
+
+    /** Called when the screen becomes visible; refreshes only if the forecast is getting old. */
+    fun refreshWeatherIfStale() {
+        val loaded = weather.value as? WeatherUiState.Loaded ?: return
+        if (Duration.between(loaded.fetchedAt, clock.instant()) > WEATHER_REFRESH_AFTER) refreshWeather()
+    }
+
+    private fun loadWeather(coordinates: Coordinates) {
+        weatherJob?.cancel()
+        // Keep showing the previous forecast while refreshing the same place.
+        val previous = (weather.value as? WeatherUiState.Loaded)?.takeIf { weatherCoordinates == coordinates }
+        weatherCoordinates = coordinates
+        weather.value = previous?.copy(isRefreshing = true, refreshError = null) ?: WeatherUiState.Loading
+        weatherJob = viewModelScope.launch {
+            weather.value = when (val result = weatherRepository.getForecast(coordinates)) {
+                is WeatherResult.Success -> WeatherUiState.Loaded(result.forecast, result.fetchedAt)
+                is WeatherResult.Failure ->
+                    previous?.copy(isRefreshing = false, refreshError = result.error)
+                        ?: WeatherUiState.Error(result.error)
+            }
+        }
+    }
 
     /** Called whenever the screen becomes visible, including after returning from Settings. */
     fun onPermissionChecked(granted: Boolean) {
@@ -131,11 +187,17 @@ class HomeViewModel(
 
     companion object {
         val STALE_AFTER: Duration = Duration.ofHours(6)
+        val WEATHER_REFRESH_AFTER: Duration = Duration.ofMinutes(30)
 
         val Factory = viewModelFactory {
             initializer {
                 val container = (this[APPLICATION_KEY] as DailyWeatherApplication).container
-                HomeViewModel(container.locationProvider, container.placeNameResolver, container.locationRepository)
+                HomeViewModel(
+                    container.locationProvider,
+                    container.placeNameResolver,
+                    container.locationRepository,
+                    container.weatherRepository,
+                )
             }
         }
     }
