@@ -11,6 +11,10 @@ import com.ah0890.dailyweather.domain.repository.LocationRepository
 import com.ah0890.dailyweather.domain.repository.PlacesRepository
 import com.ah0890.dailyweather.domain.repository.PreferencesRepository
 import com.ah0890.dailyweather.domain.repository.WeatherRepository
+import com.ah0890.dailyweather.domain.usecase.AlertLevel
+import com.ah0890.dailyweather.domain.usecase.OfficeDayPlanner
+import com.ah0890.dailyweather.domain.usecase.SevereWeatherAnalysis
+import com.ah0890.dailyweather.domain.usecase.WeatherAlert
 import kotlinx.coroutines.flow.first
 import java.time.Clock
 import java.time.DayOfWeek
@@ -78,6 +82,9 @@ interface DailySummaryNotifier {
     fun show(summary: DailySummary, unit: TemperatureUnit)
 
     fun showEveningAlert(alert: EveningAlert, unit: TemperatureUnit)
+
+    /** Severe weather in the next 24 hours at [locationName]; replaces any earlier one. */
+    fun showSevereWeather(alerts: List<WeatherAlert>, locationName: String?, unit: TemperatureUnit)
 }
 
 /**
@@ -166,6 +173,13 @@ class DailySummaryWork(
 
         val localNow = LocalDateTime.ofInstant(clock.instant(), forecast.timeZone)
         val name = main.name
+        if (prefs.severeAlertsEnabled) {
+            val current = forecast.advancedTo(localNow)
+            val legs = OfficeDayPlanner.plan(current, prefs.commuteTimes, prefs.transportMode, prefs.workdays, officeForecast.advancedTo(localNow))
+                ?.takeIf { it.summary.isToday }?.summary?.legs.orEmpty()
+            val severe = SevereWeatherAnalysis.alerts(current, legs).filter { it.level == AlertLevel.Severe }
+            if (severe.isNotEmpty()) notifier.showSevereWeather(severe, name, prefs.temperatureUnit)
+        }
         return when (kind) {
             NotificationKind.MorningSummary -> {
                 val summary = DailySummary.from(

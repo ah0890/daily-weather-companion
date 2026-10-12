@@ -21,6 +21,8 @@ import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.TravelRating
 import com.ah0890.dailyweather.domain.model.UmbrellaAdvice
 import com.ah0890.dailyweather.domain.usecase.RainSummary
+import com.ah0890.dailyweather.domain.usecase.WeatherAlert
+import com.ah0890.dailyweather.presentation.weather.describe
 import com.ah0890.dailyweather.presentation.weather.dot
 import com.ah0890.dailyweather.presentation.weather.emoji
 import com.ah0890.dailyweather.presentation.weather.formatPrecipitation
@@ -90,6 +92,15 @@ class AndroidDailySummaryNotifier(private val context: Context) : DailySummaryNo
         post(COMMUTE_CHANNEL, COMMUTE_ID, title, short, body)
     }
 
+    override fun showSevereWeather(alerts: List<WeatherAlert>, locationName: String?, unit: TemperatureUnit) {
+        if (alerts.isEmpty()) return
+        val title = locationName?.let { context.getString(R.string.notification_severe_title_location, it) }
+            ?: context.getString(R.string.notification_severe_title)
+        val lines = alerts.map { it.describe(context.resources, hourFormatter(), unit) }
+        val body = (lines + context.getString(R.string.alerts_disclaimer)).joinToString("\n")
+        post(SEVERE_CHANNEL, SEVERE_ID, title, lines.first(), body)
+    }
+
     /** e.g. "Return trip: rain 72% · 🔴 Riding conditions may be difficult" */
     private fun legLine(advice: LegAdvice): String {
         val label = context.getString(
@@ -130,8 +141,11 @@ class AndroidDailySummaryNotifier(private val context: Context) : DailySummaryNo
         }
     }
 
+    private fun hourFormatter(): DateTimeFormatter =
+        DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(Locale.getDefault(), "j"))
+
     private fun rainText(rain: RainSummary): String {
-        val hours = DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(Locale.getDefault(), "j"))
+        val hours = hourFormatter()
         return when (rain) {
             is RainSummary.NowUntil -> context.getString(R.string.rain_now_until, rain.until.format(hours))
             is RainSummary.Between -> context.getString(R.string.rain_between, rain.start.format(hours), rain.end.format(hours))
@@ -153,12 +167,17 @@ class AndroidDailySummaryNotifier(private val context: Context) : DailySummaryNo
         val notificationChannel = NotificationChannel(
             channel.id,
             context.getString(channel.name),
-            NotificationManager.IMPORTANCE_DEFAULT,
+            channel.importance,
         ).apply { description = context.getString(channel.description) }
         context.getSystemService(NotificationManager::class.java)?.createNotificationChannel(notificationChannel)
     }
 
-    private class Channel(val id: String, val name: Int, val description: Int)
+    private class Channel(
+        val id: String,
+        val name: Int,
+        val description: Int,
+        val importance: Int = NotificationManager.IMPORTANCE_DEFAULT,
+    )
 
     private companion object {
         val SUMMARY_CHANNEL = Channel("daily_summary", R.string.notification_channel_name, R.string.notification_channel_description)
@@ -167,7 +186,14 @@ class AndroidDailySummaryNotifier(private val context: Context) : DailySummaryNo
             R.string.notification_commute_channel_name,
             R.string.notification_commute_channel_description,
         )
+        val SEVERE_CHANNEL = Channel(
+            "severe_weather",
+            R.string.notification_severe_channel_name,
+            R.string.notification_severe_channel_description,
+            NotificationManager.IMPORTANCE_HIGH,
+        )
         const val SUMMARY_ID = 1
         const val COMMUTE_ID = 2
+        const val SEVERE_ID = 3
     }
 }

@@ -189,6 +189,7 @@ fun SettingsRoute(
             setEveningAlertTime = settingsViewModel::setEveningAlertTime,
             setEveningAlertDays = settingsViewModel::setEveningAlertDays,
             setWorkdays = settingsViewModel::setWorkdays,
+            setSevereAlertsEnabled = settingsViewModel::setSevereAlertsEnabled,
             openNotificationSettings = { context.openNotificationSettings() },
             setMorningCommute = settingsViewModel::setMorningCommute,
             setEveningCommute = settingsViewModel::setEveningCommute,
@@ -210,6 +211,7 @@ class SettingsActions(
     val setEveningAlertTime: (LocalTime) -> Unit = {},
     val setEveningAlertDays: (Set<DayOfWeek>) -> Unit = {},
     val setWorkdays: (Set<DayOfWeek>) -> Unit = {},
+    val setSevereAlertsEnabled: (Boolean) -> Unit = {},
     val openNotificationSettings: () -> Unit = {},
     val setMorningCommute: (LocalTime) -> Unit = {},
     val setEveningCommute: (LocalTime) -> Unit = {},
@@ -312,6 +314,13 @@ fun SettingsScreen(
                 )
                 DaysRow(stringResource(R.string.settings_notifications_days), preferences.eveningAlertDays, actions.setEveningAlertDays)
             }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            SwitchRow(
+                title = stringResource(R.string.settings_severe_switch),
+                summary = stringResource(R.string.settings_severe_switch_summary),
+                checked = preferences.severeAlertsEnabled,
+                onCheckedChange = actions.setSevereAlertsEnabled,
+            )
             if ((preferences.dailyNotificationEnabled || preferences.eveningAlertEnabled) && !notificationsAllowed) {
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp),

@@ -42,6 +42,8 @@ import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.model.WeatherForecast
 import com.ah0890.dailyweather.domain.usecase.OfficeDayPlanner
 import com.ah0890.dailyweather.domain.usecase.RainAnalysis
+import com.ah0890.dailyweather.domain.usecase.RainSoon
+import com.ah0890.dailyweather.domain.usecase.SevereWeatherAnalysis
 import com.ah0890.dailyweather.presentation.components.LocalUserPreferences
 import com.ah0890.dailyweather.presentation.components.RelativeAge
 import com.ah0890.dailyweather.presentation.components.text
@@ -121,6 +123,12 @@ private fun WeatherContent(
             val officeDay = remember(home, office, preferences.commuteTimes, mode, preferences.workdays) {
                 OfficeDayPlanner.plan(home, preferences.commuteTimes, mode, preferences.workdays, office)
             }
+            val rainSoon = remember(state.forecast) { RainSoon.of(state.forecast) }
+            if (rainSoon != null) RainSoonNote(rainSoon)
+            val alerts = remember(state.forecast, officeDay) {
+                SevereWeatherAnalysis.alerts(state.forecast, officeDay?.summary?.takeIf { it.isToday }?.legs.orEmpty())
+            }
+            WeatherAlertsCard(alerts)
             if (officeDay != null) {
                 val today = state.forecast.current.time.toLocalDate()
                 OfficeDayCard(

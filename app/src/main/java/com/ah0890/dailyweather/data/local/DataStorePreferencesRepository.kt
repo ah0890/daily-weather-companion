@@ -81,6 +81,10 @@ class DataStorePreferencesRepository(private val dataStore: DataStore<Preference
         dataStore.edit { it[Keys.EveningAlertDays] = days.toMask() }
     }
 
+    override suspend fun setSevereAlertsEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.SevereAlertsEnabled] = enabled }
+    }
+
     override suspend fun setNotificationPromptDismissed() {
         dataStore.edit { it[Keys.NotificationPromptDismissed] = true }
     }
@@ -102,6 +106,7 @@ class DataStorePreferencesRepository(private val dataStore: DataStore<Preference
             eveningAlertEnabled = this[Keys.EveningAlertEnabled] ?: defaults.eveningAlertEnabled,
             eveningAlertTime = this[Keys.EveningAlertTime]?.toTimeOrNull() ?: defaults.eveningAlertTime,
             eveningAlertDays = this[Keys.EveningAlertDays]?.toDaysOrNull() ?: defaults.eveningAlertDays,
+            severeAlertsEnabled = this[Keys.SevereAlertsEnabled] ?: defaults.severeAlertsEnabled,
             notificationPromptDismissed = this[Keys.NotificationPromptDismissed] ?: defaults.notificationPromptDismissed,
         )
     }
@@ -133,6 +138,7 @@ class DataStorePreferencesRepository(private val dataStore: DataStore<Preference
         val EveningAlertEnabled = booleanPreferencesKey("evening_alert_enabled")
         val EveningAlertTime = intPreferencesKey("evening_alert_minutes")
         val EveningAlertDays = intPreferencesKey("evening_alert_days")
+        val SevereAlertsEnabled = booleanPreferencesKey("severe_alerts_enabled")
         val NotificationPromptDismissed = booleanPreferencesKey("notification_prompt_dismissed")
     }
 }

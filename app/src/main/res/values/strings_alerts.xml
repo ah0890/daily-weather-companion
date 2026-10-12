@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Weather alerts card -->
+    <string name="alerts_title_severe">⚠️ Severe weather risk</string>
+    <string name="alerts_title_advisory">Worth knowing</string>
+    <!-- e.g. "Thunderstorms possible during your evening commute." -->
+    <string name="alert_during_morning">%1$s during your morning commute.</string>
+    <string name="alert_during_evening">%1$s during your evening commute.</string>
+    <string name="alert_during_both">%1$s during both commutes.</string>
+    <string name="alert_around">%1$s around %2$s.</string>
+    <string name="alert_between">%1$s between %2$s and %3$s.</string>
+    <!-- e.g. "feels like 38°" -->
+    <string name="alert_feels_like">feels like %1$s</string>
+    <string name="alerts_disclaimer">Based on forecast thresholds, not official warnings. Check local authorities for official alerts.</string>
+
+    <!-- Rain soon -->
+    <string name="rain_soon_ongoing">🌧️ Rain is falling and likely to continue for the next hour.</string>
+    <string name="rain_soon_easing">🌦️ Rain may ease within the next hour.</string>
+    <string name="rain_soon_starting">🌧️ Rain may begin within the next hour (%1$d%%).</string>
+    <string name="rain_soon_possible">🌂 Some chance of rain in the next two hours (%1$d%%).</string>
+    <string name="rain_soon_none">☀️ No significant rain expected in the next two hours.</string>
+
+    <!-- Notification -->
+    <string name="notification_severe_channel_name">Severe weather</string>
+    <string name="notification_severe_channel_description">Thunderstorms, heavy rain, gales, dense fog, extreme heat, snow or ice in the forecast.</string>
+    <string name="notification_severe_title">⚠️ Severe weather risk</string>
+    <string name="notification_severe_title_location">⚠️ Severe weather risk · %1$s</string>
+
+    <!-- Settings -->
+    <string name="settings_severe_switch">Severe weather alerts</string>
+    <string name="settings_severe_switch_summary">Checked with each scheduled notification. Uses forecast thresholds, not official warnings.</string>
+</resources>

@@ -61,6 +61,8 @@ class SettingsViewModel(
     fun setEveningAlertDays(days: Set<DayOfWeek>) =
         updateNotification(NotificationKind.EveningCommute) { repository.setEveningAlertDays(days) }
 
+    fun setSevereAlertsEnabled(enabled: Boolean) = launch { repository.setSevereAlertsEnabled(enabled) }
+
     /** The one-time prompt on the Today screen was answered either way. */
     fun dismissNotificationPrompt() = launch { repository.setNotificationPromptDismissed() }
 

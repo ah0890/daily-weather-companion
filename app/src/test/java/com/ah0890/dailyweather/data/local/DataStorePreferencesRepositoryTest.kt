@@ -55,6 +55,7 @@ class DataStorePreferencesRepositoryTest {
         repository.setEveningAlertEnabled(false)
         repository.setEveningAlertTime(LocalTime.of(16, 10))
         repository.setEveningAlertDays(emptySet())
+        repository.setSevereAlertsEnabled(false)
 
         val saved = repository.preferences.first()
         assertEquals(setOf(DayOfWeek.SUNDAY, DayOfWeek.MONDAY), saved.workdays)
@@ -62,6 +63,7 @@ class DataStorePreferencesRepositoryTest {
         assertEquals(false, saved.eveningAlertEnabled)
         assertEquals(LocalTime.of(16, 10), saved.eveningAlertTime)
         assertEquals(emptySet<DayOfWeek>(), saved.eveningAlertDays)
+        assertEquals(false, saved.severeAlertsEnabled)
     }
 
     @Test

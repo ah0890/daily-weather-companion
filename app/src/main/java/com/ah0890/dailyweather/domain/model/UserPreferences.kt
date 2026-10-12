@@ -22,6 +22,8 @@ data class UserPreferences(
     val eveningAlertEnabled: Boolean = true,
     val eveningAlertTime: LocalTime = LocalTime.of(15, 30),
     val eveningAlertDays: Set<DayOfWeek> = WEEKDAYS,
+    /** Separate notification when severe weather is forecast, checked with each scheduled run. */
+    val severeAlertsEnabled: Boolean = true,
     /** The one-time "turn on morning summaries" prompt on the Today screen was answered. */
     val notificationPromptDismissed: Boolean = false,
 ) {

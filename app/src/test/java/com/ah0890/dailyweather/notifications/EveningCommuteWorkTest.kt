@@ -14,6 +14,7 @@ import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.model.WeatherResult
 import com.ah0890.dailyweather.domain.repository.LocationRepository
 import com.ah0890.dailyweather.domain.usecase.RainSummary
+import com.ah0890.dailyweather.domain.usecase.WeatherAlert
 import com.ah0890.dailyweather.notifications.DailySummaryWork.Outcome
 import com.ah0890.dailyweather.notifications.DailySummaryWork.SkipReason
 import com.ah0890.dailyweather.testing.FakeWeatherRepository
@@ -46,6 +47,7 @@ class EveningCommuteWorkTest {
         override fun showEveningAlert(alert: EveningAlert, unit: TemperatureUnit) {
             alerts += alert
         }
+        override fun showSevereWeather(alerts: List<WeatherAlert>, locationName: String?, unit: TemperatureUnit) = Unit
     }
 
     private class FakeLocations(initial: SavedLocation?) : LocationRepository {

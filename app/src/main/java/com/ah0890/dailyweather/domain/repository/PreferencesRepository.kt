@@ -37,5 +37,7 @@ interface PreferencesRepository {
 
     suspend fun setEveningAlertDays(days: Set<DayOfWeek>)
 
+    suspend fun setSevereAlertsEnabled(enabled: Boolean)
+
     suspend fun setNotificationPromptDismissed()
 }

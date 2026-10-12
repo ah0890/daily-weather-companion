@@ -9,10 +9,13 @@ import com.ah0890.dailyweather.domain.model.TravelRating
 import com.ah0890.dailyweather.domain.model.TravelTip
 import com.ah0890.dailyweather.domain.model.UmbrellaAdvice
 import com.ah0890.dailyweather.domain.model.UserPreferences
+import com.ah0890.dailyweather.domain.model.WeatherCondition
+import com.ah0890.dailyweather.domain.model.WeatherHazard
 import com.ah0890.dailyweather.domain.model.WeatherError
 import com.ah0890.dailyweather.domain.model.WeatherResult
 import com.ah0890.dailyweather.domain.repository.LocationRepository
 import com.ah0890.dailyweather.domain.usecase.RainSummary
+import com.ah0890.dailyweather.domain.usecase.WeatherAlert
 import com.ah0890.dailyweather.notifications.DailySummaryWork.Outcome
 import com.ah0890.dailyweather.notifications.DailySummaryWork.SkipReason
 import com.ah0890.dailyweather.testing.FakeWeatherRepository
@@ -44,6 +47,10 @@ class DailySummaryWorkTest {
             shown += summary to unit
         }
         override fun showEveningAlert(alert: EveningAlert, unit: TemperatureUnit) = Unit
+        val severe = mutableListOf<List<WeatherAlert>>()
+        override fun showSevereWeather(alerts: List<WeatherAlert>, locationName: String?, unit: TemperatureUnit) {
+            severe += alerts
+        }
     }
 
     private class FakeLocations(initial: SavedLocation?) : LocationRepository {
@@ -207,5 +214,30 @@ class DailySummaryWorkTest {
         val weather = FakeWeatherRepository { error("bug in a repository") }
 
         assertEquals(Outcome.Skipped(SkipReason.Error), work(weather).run(attempt = 0))
+    }
+
+    @Test
+    fun `severe weather gets its own notification`() = runTest {
+        val stormy = rainyForecast().let { f ->
+            f.copy(hourly = f.hourly.map { if (it.time.hour == 15) it.copy(condition = WeatherCondition.Thunderstorm) else it })
+        }
+        val weather = FakeWeatherRepository { WeatherResult.Success(stormy, now) }
+
+        work(weather).run(attempt = 0)
+
+        val alert = notifier.severe.single().single()
+        assertEquals(WeatherHazard.Thunderstorm, alert.hazard)
+        assertEquals(LocalDateTime.of(2026, 10, 10, 15, 0), alert.start)
+    }
+
+    @Test
+    fun `no severe notification for ordinary weather or when switched off`() = runTest {
+        work(FakeWeatherRepository { WeatherResult.Success(rainyForecast(), now) }).run(attempt = 0)
+        assertTrue(notifier.severe.isEmpty())
+
+        preferences.setSevereAlertsEnabled(false)
+        val stormy = rainyForecast().let { f -> f.copy(hourly = f.hourly.map { it.copy(condition = WeatherCondition.Thunderstorm) }) }
+        work(FakeWeatherRepository { WeatherResult.Success(stormy, now) }).run(attempt = 0)
+        assertTrue(notifier.severe.isEmpty())
     }
 }
