@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_name">Office weather</string>
+    <string name="widget_description">Current weather, rain chance, your next commute and important alerts.</string>
+    <string name="widget_no_data">Open the app to load the forecast.</string>
+    <string name="widget_outdated">Outdated</string>
+    <!-- e.g. "🌧️ Rain 15%" -->
+    <string name="widget_rain">🌧️ Rain %1$d%%</string>
+</resources>

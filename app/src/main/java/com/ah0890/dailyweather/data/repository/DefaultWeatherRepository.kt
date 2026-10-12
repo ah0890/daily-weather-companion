@@ -16,10 +16,15 @@ import java.time.Clock
 import java.time.Instant
 import kotlin.coroutines.cancellation.CancellationException
 
+/**
+ * @param onForecastSaved called after a new forecast was cached, e.g. to redraw the home-screen
+ *   widget, which only ever reads the cache.
+ */
 class DefaultWeatherRepository(
     private val remote: WeatherRemoteDataSource,
     private val cache: WeatherCache? = null,
     private val clock: Clock = Clock.systemUTC(),
+    private val onForecastSaved: () -> Unit = {},
 ) : WeatherRepository {
 
     override suspend fun getForecast(coordinates: Coordinates): WeatherResult {
@@ -43,7 +48,8 @@ class DefaultWeatherRepository(
     // The cache is a convenience: a full disk or unreadable file must never break loading.
     private suspend fun saveQuietly(forecast: WeatherForecast, fetchedAt: Instant) {
         try {
-            cache?.save(forecast, fetchedAt)
+            cache?.save(forecast, fetchedAt) ?: return
+            onForecastSaved()
         } catch (_: IOException) {
         }
     }

@@ -27,6 +27,7 @@ import com.ah0890.dailyweather.notifications.AndroidDailySummaryNotifier
 import com.ah0890.dailyweather.notifications.DailySummaryNotifier
 import com.ah0890.dailyweather.notifications.NotificationScheduler
 import com.ah0890.dailyweather.notifications.WorkManagerNotificationScheduler
+import com.ah0890.dailyweather.widget.WidgetUpdater
 import java.io.File
 
 /** App-wide dependencies, created lazily. A hand-written container keeps the build simple. */
@@ -42,8 +43,11 @@ class AppContainer(context: Context) {
                 directory = File(appContext.filesDir, "weather_cache"),
                 legacyFile = File(appContext.filesDir, "weather_cache.json"),
             ),
+            onForecastSaved = widgetUpdater::requestUpdate,
         )
     }
+
+    val widgetUpdater: WidgetUpdater by lazy { WidgetUpdater(appContext) }
 
     val notificationScheduler: NotificationScheduler by lazy { WorkManagerNotificationScheduler(appContext) }
     val dailySummaryNotifier: DailySummaryNotifier by lazy { AndroidDailySummaryNotifier(appContext) }

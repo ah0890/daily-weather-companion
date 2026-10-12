@@ -86,4 +86,17 @@ class WeatherRepositoryCacheTest {
 
         assertEquals(WeatherResult.Success(forecast, earlier), repository.cachedForecast(SampleForecasts.london))
     }
+
+    @Test
+    fun `listeners hear about saved forecasts only`() = runTest {
+        var saved = 0
+        DefaultWeatherRepository(Remote { forecast }, MemoryCache(), clock) { saved++ }.getForecast(SampleForecasts.london)
+        assertEquals(1, saved)
+
+        DefaultWeatherRepository(Remote { throw UnknownHostException() }, MemoryCache(), clock) { saved++ }
+            .getForecast(SampleForecasts.london)
+        DefaultWeatherRepository(Remote { forecast }, MemoryCache(failing = true), clock) { saved++ }
+            .getForecast(SampleForecasts.london)
+        assertEquals(1, saved)
+    }
 }

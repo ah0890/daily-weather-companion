@@ -58,7 +58,7 @@ Gotchas:
 
 ## 5. Tech stack (versions in `gradle/libs.versions.toml`)
 
-AGP 9.4.1 (built-in Kotlin) · Gradle 9.8.1 · Kotlin 2.4.21 · Compose BOM 2026.09.00 (Material 3 1.4) · compileSdk/targetSdk 37 · minSdk 26 · Navigation Compose 2.10.2 (type-safe `@Serializable` routes) · Lifecycle 2.11 · Retrofit 3.0 + OkHttp 5.5 + kotlinx.serialization 1.11 · DataStore Preferences 1.2.1 · WorkManager 2.12 · Tests: JUnit4, coroutines-test 1.11, mockwebserver3.
+AGP 9.4.1 (built-in Kotlin) · Gradle 9.8.1 · Kotlin 2.4.21 · Compose BOM 2026.09.00 (Material 3 1.4) · compileSdk/targetSdk 37 · minSdk 26 · Navigation Compose 2.10.2 (type-safe `@Serializable` routes) · Lifecycle 2.11 · Glance 1.2.0 · Retrofit 3.0 + OkHttp 5.5 + kotlinx.serialization 1.11 · DataStore Preferences 1.2.1 · WorkManager 2.12 · Tests: JUnit4, coroutines-test 1.11, mockwebserver3.
 Deliberately not used: Hilt (manual DI), Room (single-record JSON cache), Play Services location (framework `LocationManager`), material-icons-extended.
 
 ## 6. Architecture
@@ -90,9 +90,10 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 | `presentation/settings/` | `PlacesViewModel` + `PlacesSection` (add by search or current location, edit, roles, delete), Settings (location; saved places; notifications: morning + evening switch/time/days; office schedule: office days, departures, transport; °C/°F, theme, privacy, Open-Meteo link, version), `DaysRow` (presets + 7 day toggles), `SettingsViewModel`, `PrivacyScreen` |
 | `presentation/weather/` | Shared: `TravelUi` (emoji/labels for transport, hazards, tips, score, checklist; plain res ids so notifications/widget can reuse), `ConditionUi` (mood/emoji/label; night icons never show a sun), `WeatherFormatting` (use `temperatureText()` in UI for the user's unit), `HourlyForecastRow`, `WeatherErrorCard`, `StaleForecastNotice` |
 | `presentation/components/` | `RelativeAge`, `LocalUserPreferences`, `SystemIntents` (permissions, settings/URL intents, notification helpers) |
+| `widget/` | `WidgetSnapshot` (pure: what to show, from cached forecasts), `DailyWeatherWidget` (Glance UI + cache-only loading), `DailyWeatherWidgetReceiver` (manifest, `xml/daily_weather_widget_info`, updatePeriod 1 h), `WidgetUpdater` (redraw if widgets exist; called via `DefaultWeatherRepository.onForecastSaved`) |
 | `ui/theme/` | Colours, typography, shapes, `WeatherBackdrop`, `LocalDarkTheme`, `ColorScheme.cardContainer` |
 
-Tests (`app/src/test/...`): **336 tests**, all passing; lint clean. Helpers in `testing/`: `SampleForecasts` (+`hour()` builder; its 10 Oct 2026 is a **Saturday**, so set days/workdays explicitly), `FakeNotificationScheduler`, `FakeAirQualityRepository`, `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVMs). Create ViewModels *after* `MainDispatcherRule` is active (use `by lazy` for fields).
+Tests (`app/src/test/...`): **343 tests**, all passing; lint clean. Helpers in `testing/`: `SampleForecasts` (+`hour()` builder; its 10 Oct 2026 is a **Saturday**, so set days/workdays explicitly), `FakeNotificationScheduler`, `FakeAirQualityRepository`, `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVMs). Create ViewModels *after* `MainDispatcherRule` is active (use `by lazy` for fields).
 
 ## 7. Key behaviour & decisions
 
@@ -116,8 +117,9 @@ Verified on the emulator (2026-10-11): Today, 7-day + expanded day, notification
 5. Air quality via Open-Meteo air-quality API (`AirQualityCard`, expandable details).
 6. Pollen from the same air-quality call: Open-Meteo pollen is CAMS **Europe only** (null elsewhere, e.g. Pakistan), so it is shown only where data exists, with an "unavailable for this region" note.
 7. UV status card + UV alert (prefs `uv_alert_enabled`/`uv_alert_level` High|VeryHigh) as a morning-summary line.
-8. (next) Home-screen widget.
-9. Wear OS · 10. Polish + security pass, "all rights reserved" licence, signed APK in `D:\DailyWeather\` (owner asked on 2026-10-12).
+8. Home-screen widget (Glance 1.2.0, cache-only).
+9. (next) Wear OS companion.
+10. Polish + security pass, "all rights reserved" licence, signed APK in `D:\DailyWeather\` (owner asked on 2026-10-12).
 
 Not yet verified on a device: offline/airplane mode, °F and Dark theme switching, reboot persistence, Privacy page in the release build.
 

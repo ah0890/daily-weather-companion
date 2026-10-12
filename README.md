@@ -2,7 +2,7 @@
 
 A calm, location-aware Android weather app built around one question: **what does today's weather mean for my workday?**
 
-> **Version 1.0.1**, being extended into a personal weather and office-commute assistant. Covered by 336 unit tests. Built for personal daily use.
+> **Version 1.0.1**, being extended into a personal weather and office-commute assistant. Covered by 343 unit tests. Built for personal daily use.
 
 ## Overview
 
@@ -38,6 +38,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | Air quality (US AQI category, main pollutant, pollutant details) | ✅ Done |
 | Pollen (tree, grass, weed) where the provider has data (Europe only) | ✅ Done, limited by data |
 | UV status and configurable UV alert | ✅ Done |
+| Home-screen widget (Jetpack Glance, light/dark) | ✅ Done |
 | Settings: location, office days, commute times, transport, notification days, °C/°F, System/Light/Dark theme, privacy, about | ✅ Done |
 
 ## Screenshots
@@ -52,6 +53,7 @@ Capture them on a device or emulator (`adb exec-out screencap -p > today.png`) a
 
 - **Kotlin** with **Jetpack Compose** and **Material 3**
 - **Navigation Compose** with type-safe (serializable) routes
+- **Jetpack Glance** for the home-screen widget
 - **Kotlin Coroutines / Flow** for asynchronous work and observable state
 - **Retrofit/OkHttp + kotlinx.serialization** for networking
 - **DataStore** for the saved location; a JSON file (kotlinx.serialization) for the forecast cache
@@ -176,6 +178,15 @@ The **UV alert** (Settings → Notifications, default on from *High*, or from *V
 The same air-quality request returns hourly pollen counts (alder, birch, olive → **tree**; **grass**; mugwort, ragweed → **weed**). The app takes the highest count per type over the next 24 hours and rates it with the US National Allergy Bureau scale (e.g. grass: Low < 5, Moderate 5–19, High 20–199, Very high ≥ 200 grains/m³), shown as *"🌿 Pollen: High (Grass pollen)"*.
 
 **Limitation:** Open-Meteo's pollen data comes from the CAMS *European* model and is empty outside Europe (checked for Islamabad and New York, October 2026). There the app shows no pollen level and the details say *"Pollen forecasts aren't available for this region"*. Nothing is estimated. Pollen sits in the air-quality data layer, so a regional provider could be added behind `AirQualityRepository` later.
+
+## Home-Screen Widget
+
+An **Office weather** widget (Jetpack Glance 1.2, resizable, default 3 × 2) shows the place name, the current condition and temperature, today's rain chance, the next commute verdict (the first trip that isn't favourable, else the next one) and either the first severe alert or the umbrella advice. Tapping it opens the app.
+
+- It uses the place the app opens with (the default place, else home, else the last device location), and the home and office forecasts for the commute.
+- It **only reads cached forecasts and never downloads anything**. It is redrawn whenever the app or a notification job saves a new forecast, and re-rendered from the cache once an hour so "now" moves forward. A forecast older than 6 hours is marked *Outdated*.
+- Colours come from `GlanceTheme`, so it follows the system light/dark mode (and dynamic colour on Android 12+).
+- What it shows is decided by a pure `WidgetSnapshot`, which is unit-tested.
 
 ## Offline Behaviour
 
@@ -320,7 +331,7 @@ Create a keystore once with `keytool -genkeypair -v -keystore release.jks -keyal
 ## Testing
 
 ```bash
-./gradlew testDebugUnitTest    # JVM unit tests (336)
+./gradlew testDebugUnitTest    # JVM unit tests (343)
 ./gradlew lintDebug            # Android Lint
 ```
 
@@ -330,6 +341,7 @@ The unit tests cover, among other things:
 - **Rain and umbrella rules** at 0 / 20 / 50 / 80 / 100 %, threshold boundaries, period merging and the rest-of-day window.
 - **Commute, hazard thresholds, transport-specific advice, office score and checklist**, **offline cache** (corrupt files, format versions, location mismatch) and **stale-forecast handling**.
 - **Air quality and pollen**: EPA categories, NAB pollen bands, no pollen data outside Europe, main pollutant, 24-hour peak, missing and malformed values, caching and offline fallback.
+- **Widget**: what the snapshot shows on calm, wet and stormy days, the office forecast for the trip home, days off, outdated data, and redraws only after a forecast is saved.
 - **UV**: WHO categories and boundaries, today's peak and high hours, after dark, daily fallback, alert levels.
 - **Alerts**: grouping, levels, commute overlap, 24-hour window, several hazards together, rain soon.
 - **Saved places**: add, edit, delete, roles and default, persistence, corrupt data, place search against a mock server, and which forecasts are loaded.
@@ -354,7 +366,7 @@ Things that need a real device or emulator:
 
 ## Future Improvements
 
-The architecture (repository interfaces, provider-independent domain models, pure use cases) is meant to make these straightforward: a home-screen widget and Wear OS support.
+The architecture (repository interfaces, provider-independent domain models, pure use cases) is meant to make these straightforward: Wear OS support.
 
 ## License
 
