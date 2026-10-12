@@ -17,8 +17,9 @@ import kotlin.math.roundToInt
  */
 fun WeatherAlert.describe(res: Resources, hours: DateTimeFormatter, unit: TemperatureUnit): String {
     var label = res.getString(hazard.labelRes)
-    if ((hazard == WeatherHazard.Heat || hazard == WeatherHazard.ExtremeHeat) && peakFeelsLikeC != null) {
-        label += " (" + res.getString(R.string.alert_feels_like, formatTemperature(peakFeelsLikeC, unit)) + ")"
+    val feelsLike = peakFeelsLikeC
+    if ((hazard == WeatherHazard.Heat || hazard == WeatherHazard.ExtremeHeat) && feelsLike != null) {
+        label += " (" + res.getString(R.string.alert_feels_like, formatTemperature(feelsLike, unit)) + ")"
     }
     val sentence = when {
         CommuteLegType.Morning in legs && CommuteLegType.Evening in legs -> res.getString(R.string.alert_during_both, label)

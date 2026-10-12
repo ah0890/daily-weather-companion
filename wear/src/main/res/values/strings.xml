@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wear_app_name">Office Weather</string>
+    <string name="wear_title">Office weather</string>
+    <string name="wear_loading">Loading…</string>
+    <string name="wear_permission">Allow approximate location to see the weather where you are.</string>
+    <string name="wear_allow">Allow</string>
+    <string name="wear_no_location">Couldn\'t find your location. Make sure location is on.</string>
+    <string name="wear_no_connection">Weather unavailable. Check the connection.</string>
+    <string name="wear_retry">Try again</string>
+    <!-- e.g. "🌧️ Rain 72%" -->
+    <string name="wear_rain">🌧️ Rain %1$d%%</string>
+    <string name="wear_rain_between">Rain likely %1$s–%2$s</string>
+    <string name="wear_rain_now_until">Rain until about %1$s</string>
+    <string name="wear_rain_around">Chance of rain around %1$s</string>
+    <string name="wear_rain_low">No significant rain today</string>
+    <string name="wear_umbrella">☔ Umbrella recommended</string>
+    <string name="wear_morning">Morning commute</string>
+    <string name="wear_evening">Return trip</string>
+    <string name="wear_commute_good">🟢 Looks fine</string>
+    <string name="wear_commute_caution">🟡 Take care</string>
+    <string name="wear_commute_bad">🔴 Difficult conditions possible</string>
+    <string name="wear_alert">⚠️ %1$s</string>
+    <string name="wear_hazard_thunderstorm">Thunderstorms possible</string>
+    <string name="wear_hazard_heavy_rain">Heavy rain possible</string>
+    <string name="wear_hazard_gale">Very strong wind possible</string>
+    <string name="wear_hazard_fog">Dense fog possible</string>
+    <string name="wear_hazard_heat">Extreme heat expected</string>
+    <string name="wear_hazard_wintry">Snow or ice possible</string>
+    <string name="wear_note">Uses default commute times (8:00 and 17:00).</string>
+</resources>

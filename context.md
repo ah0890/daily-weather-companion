@@ -69,7 +69,9 @@ UI (Compose) → ViewModel (StateFlow) → Repository interface (domain) → dat
 
 Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons); the Application also ensures the morning job is scheduled on every start. ViewModels use `viewModelFactory { initializer { … APPLICATION_KEY … } }`. `HomeViewModel` is created once in `DailyWeatherApp` (activity scope) and shared by Today, 7 days and Settings.
 
-| Path (`app/src/main/java/com/ah0890/dailyweather/`) | Purpose |
+Modules: **`:core`** (Android library, no UI/resources: `domain/**`, `data/remote/**` incl. `WeatherErrors.kt` `toWeatherError()`, `location/**`; its tests: Open-Meteo client/mapper tests + copy of `forecast_sample.json`), **`:app`** (everything else), **`:wear`** (standalone Wear OS app, same applicationId, minSdk 30, Wear Compose Material3 1.7.1: `WatchSummary` (pure), `WearViewModel`, `WearActivity`; default commute times, no phone sync, not yet run on a watch). Package names are the same in all modules. `internal` in `:core` is invisible to `:app` tests.
+
+| Path (`…/java/com/ah0890/dailyweather/`) | Purpose |
 | --- | --- |
 | `MainActivity.kt` | Collects preferences → `LocalUserPreferences`; resolves theme (System/Light/Dark) and status-bar style |
 | `AppContainer.kt` | Location provider/resolver, `WeatherRepository` (Open-Meteo + file cache), `LocationRepository` (DataStore `saved_location`), `PreferencesRepository` (DataStore `user_preferences`), `NotificationScheduler`, `DailySummaryNotifier` |
@@ -93,7 +95,7 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 | `widget/` | `WidgetSnapshot` (pure: what to show, from cached forecasts), `DailyWeatherWidget` (Glance UI + cache-only loading), `DailyWeatherWidgetReceiver` (manifest, `xml/daily_weather_widget_info`, updatePeriod 1 h), `WidgetUpdater` (redraw if widgets exist; called via `DefaultWeatherRepository.onForecastSaved`) |
 | `ui/theme/` | Colours, typography, shapes, `WeatherBackdrop`, `LocalDarkTheme`, `ColorScheme.cardContainer` |
 
-Tests (`app/src/test/...`): **343 tests**, all passing; lint clean. Helpers in `testing/`: `SampleForecasts` (+`hour()` builder; its 10 Oct 2026 is a **Saturday**, so set days/workdays explicitly), `FakeNotificationScheduler`, `FakeAirQualityRepository`, `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVMs). Create ViewModels *after* `MainDispatcherRule` is active (use `by lazy` for fields).
+Tests: **346** (app 310, core 33, wear 3), all passing; lint clean. Helpers in `testing/`: `SampleForecasts` (+`hour()` builder; its 10 Oct 2026 is a **Saturday**, so set days/workdays explicitly), `FakeNotificationScheduler`, `FakeAirQualityRepository`, `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVMs). Create ViewModels *after* `MainDispatcherRule` is active (use `by lazy` for fields).
 
 ## 7. Key behaviour & decisions
 
@@ -118,8 +120,9 @@ Verified on the emulator (2026-10-11): Today, 7-day + expanded day, notification
 6. Pollen from the same air-quality call: Open-Meteo pollen is CAMS **Europe only** (null elsewhere, e.g. Pakistan), so it is shown only where data exists, with an "unavailable for this region" note.
 7. UV status card + UV alert (prefs `uv_alert_enabled`/`uv_alert_level` High|VeryHigh) as a morning-summary line.
 8. Home-screen widget (Glance 1.2.0, cache-only).
-9. (next) Wear OS companion.
-10. Polish + security pass, "all rights reserved" licence, signed APK in `D:\DailyWeather\` (owner asked on 2026-10-12).
+9. `:core` module split + Wear OS companion (`:wear`).
+10. (next) Polish + security pass, "all rights reserved" licence, version 2.0.0 (versionCode 3) signed APK.
+
 
 Not yet verified on a device: offline/airplane mode, °F and Dark theme switching, reboot persistence, Privacy page in the release build.
 

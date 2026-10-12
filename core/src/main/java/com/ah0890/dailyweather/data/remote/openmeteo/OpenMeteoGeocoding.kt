@@ -1,6 +1,6 @@
 package com.ah0890.dailyweather.data.remote.openmeteo
 
-import com.ah0890.dailyweather.data.repository.toWeatherError
+import com.ah0890.dailyweather.data.remote.toWeatherError
 import com.ah0890.dailyweather.domain.model.Coordinates
 import com.ah0890.dailyweather.domain.model.PlaceSuggestion
 import com.ah0890.dailyweather.domain.model.WeatherError

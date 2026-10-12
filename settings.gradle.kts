@@ -22,3 +22,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "DailyWeatherCompanion"
 include(":app")
+include(":core")
+include(":wear")

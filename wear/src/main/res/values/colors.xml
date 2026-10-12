@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher icon colours, the same as the phone app. -->
+<resources>
+    <color name="launcher_background">#FF2B5797</color>
+    <color name="launcher_sun">#FFFFC24A</color>
+    <color name="launcher_cloud">#FFFFFFFF</color>
+</resources>

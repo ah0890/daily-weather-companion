@@ -2,7 +2,7 @@
 
 A calm, location-aware Android weather app built around one question: **what does today's weather mean for my workday?**
 
-> **Version 1.0.1**, being extended into a personal weather and office-commute assistant. Covered by 343 unit tests. Built for personal daily use.
+> **Version 1.0.1**, being extended into a personal weather and office-commute assistant. Covered by 346 unit tests. Built for personal daily use.
 
 ## Overview
 
@@ -39,6 +39,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | Pollen (tree, grass, weed) where the provider has data (Europe only) | ✅ Done, limited by data |
 | UV status and configurable UV alert | ✅ Done |
 | Home-screen widget (Jetpack Glance, light/dark) | ✅ Done |
+| Wear OS companion (standalone watch app) | ✅ Done, not tested on a watch |
 | Settings: location, office days, commute times, transport, notification days, °C/°F, System/Light/Dark theme, privacy, about | ✅ Done |
 
 ## Screenshots
@@ -84,15 +85,26 @@ Repository (domain interface)
 Remote data source (weather API)  +  Local data source (cache, saved location)
 ```
 
-Package layout (`com.ah0890.dailyweather`):
+Gradle modules:
 
 ```text
-presentation/   Compose screens and ViewModels (home, forecast, settings, navigation, components)
-domain/         Pure Kotlin models, repository interfaces and use cases (rain analysis, commute)
-data/           Open-Meteo API client, weather repository, offline forecast cache and saved-location storage
-location/       One-shot location lookup and place-name resolution
-notifications/  Morning summary: scheduling rules, WorkManager job and notification
-ui/theme/       Colours, typography, shapes and weather backdrops
+:core   Shared library (no UI): domain models, rules and repository interfaces; Open-Meteo clients; location lookup
+:app    The phone app: Compose UI, ViewModels, storage, notifications, widget
+:wear   Standalone Wear OS app built on :core
+```
+
+Package layout (`com.ah0890.dailyweather`, the same in every module):
+
+```text
+domain/         [core] Pure Kotlin models, repository interfaces and use cases (rain, commute, hazards, score, UV, alerts)
+data/remote/    [core] Open-Meteo forecast, air-quality and place-search clients
+location/       [core] One-shot location lookup and place-name resolution
+data/local/     [app]  Offline forecast cache, preferences, saved location and saved places
+data/repository/[app]  Weather repository (network + cache)
+presentation/   [app]  Compose screens and ViewModels (home, forecast, settings, navigation, components)
+notifications/  [app]  Scheduling rules, WorkManager job and notifications
+widget/         [app]  Glance home-screen widget
+ui/theme/       [app]  Colours, typography, shapes and weather backdrops
 ```
 
 Dependencies are wired with a small manual container rather than a DI framework — the app is small enough that Hilt/Dagger would add more build complexity than it saves.
@@ -187,6 +199,16 @@ An **Office weather** widget (Jetpack Glance 1.2, resizable, default 3 × 2) sho
 - It **only reads cached forecasts and never downloads anything**. It is redrawn whenever the app or a notification job saves a new forecast, and re-rendered from the cache once an hour so "now" moves forward. A forecast older than 6 hours is marked *Outdated*.
 - Colours come from `GlanceTheme`, so it follows the system light/dark mode (and dynamic colour on Android 12+).
 - What it shows is decided by a pure `WidgetSnapshot`, which is unit-tested.
+
+## Wear OS Companion
+
+The `:wear` module is a small **standalone** Wear OS app (Wear OS 3+, Compose for Wear OS Material 3) with the same application id as the phone app. One scrolling screen shows **Office weather**: the temperature, today's rain chance and when rain is likely, an umbrella note, the next commute trip with a 🟢/🟡/🔴 verdict, and any severe alert. It uses exactly the same rules as the phone through `:core`.
+
+Design choices and limitations:
+
+- To avoid adding Google Play Services (the Wearable Data Layer) to the phone app, the watch **doesn't sync with the phone**. It looks up its own approximate location once when opened (on many watches this comes through the paired phone) and downloads the forecast with the same rounding. It uses the default commute (8:00 and 17:00, Monday to Friday, transport "Other") rather than the phone's settings.
+- It loads only when opened or when *Try again* is tapped, with no background work.
+- It builds and passes lint and its unit tests, but it **hasn't been tried on a real watch or Wear emulator** yet.
 
 ## Offline Behaviour
 
@@ -310,9 +332,9 @@ None needed — Open-Meteo is keyless. `local.properties` is reserved for any fu
 ## Building the Application
 
 ```bash
-./gradlew assembleDebug        # debug APK  → app/build/outputs/apk/debug/
+./gradlew assembleDebug        # debug APKs → app/build/outputs/apk/debug/, wear/build/outputs/apk/debug/
 ./gradlew installDebug         # install on a connected device/emulator
-./gradlew assembleRelease      # minified release APK → app/build/outputs/apk/release/
+./gradlew assembleRelease      # minified release APKs → app/…/release/app-release.apk, wear/…/release/wear-release.apk
 ```
 
 ### Signing a release build
@@ -331,7 +353,7 @@ Create a keystore once with `keytool -genkeypair -v -keystore release.jks -keyal
 ## Testing
 
 ```bash
-./gradlew testDebugUnitTest    # JVM unit tests (343)
+./gradlew testDebugUnitTest    # JVM unit tests in all modules (346)
 ./gradlew lintDebug            # Android Lint
 ```
 
@@ -341,6 +363,7 @@ The unit tests cover, among other things:
 - **Rain and umbrella rules** at 0 / 20 / 50 / 80 / 100 %, threshold boundaries, period merging and the rest-of-day window.
 - **Commute, hazard thresholds, transport-specific advice, office score and checklist**, **offline cache** (corrupt files, format versions, location mismatch) and **stale-forecast handling**.
 - **Air quality and pollen**: EPA categories, NAB pollen bands, no pollen data outside Europe, main pollutant, 24-hour peak, missing and malformed values, caching and offline fallback.
+- **Wear OS**: the watch summary on dry, wet and stormy days.
 - **Widget**: what the snapshot shows on calm, wet and stormy days, the office forecast for the trip home, days off, outdated data, and redraws only after a forecast is saved.
 - **UV**: WHO categories and boundaries, today's peak and high hours, after dark, daily fallback, alert levels.
 - **Alerts**: grouping, levels, commute overlap, 24-hour window, several hazards together, rain soon.
@@ -366,7 +389,7 @@ Things that need a real device or emulator:
 
 ## Future Improvements
 
-The architecture (repository interfaces, provider-independent domain models, pure use cases) is meant to make these straightforward: Wear OS support.
+The architecture (repository interfaces, provider-independent domain models, pure use cases) makes further additions straightforward, e.g. syncing settings to the watch or a regional pollen provider.
 
 ## License
 
