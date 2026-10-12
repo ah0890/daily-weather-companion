@@ -12,7 +12,19 @@
     <!-- e.g. "18 µg/m³ · index 64" -->
     <string name="air_reading">%1$s µg/m³ · index %2$d</string>
     <string name="air_reading_no_index">%1$s µg/m³</string>
-    <string name="air_source">Model data from CAMS via Open-Meteo, not a local measuring station.</string>
+    <!-- e.g. "🌿 Pollen: High (grass)" -->
+    <string name="pollen_summary">🌿 Pollen: %1$s (%2$s)</string>
+    <!-- e.g. "High · 45 grains/m³" -->
+    <string name="pollen_reading">%1$s · %2$s grains/m³</string>
+    <string name="pollen_unavailable">🌿 Pollen forecasts aren\'t available for this region (the data source covers Europe only).</string>
+    <string name="pollen_low">Low</string>
+    <string name="pollen_moderate">Moderate</string>
+    <string name="pollen_high">High</string>
+    <string name="pollen_very_high">Very high</string>
+    <string name="pollen_tree">Tree pollen</string>
+    <string name="pollen_grass">Grass pollen</string>
+    <string name="pollen_weed">Weed pollen</string>
+    <string name="air_source">Model data from CAMS via Open-Meteo, not a local measuring station. Pollen levels use the US National Allergy Bureau scale.</string>
 
     <string name="aqi_good">Good</string>
     <string name="aqi_moderate">Moderate</string>

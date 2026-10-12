@@ -75,7 +75,7 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 | `AppContainer.kt` | Location provider/resolver, `WeatherRepository` (Open-Meteo + file cache), `LocationRepository` (DataStore `saved_location`), `PreferencesRepository` (DataStore `user_preferences`), `NotificationScheduler`, `DailySummaryNotifier` |
 | `domain/model/` | `WeatherForecast` (+`today`, `upcomingHours()`, `hoursOn()`, `advancedTo(now)`), `CurrentWeather`, `HourlyForecast`, `DailyForecast` (metric, location-local times), `WeatherCondition`, `Coordinates` (`approximate()` = 2 decimals), `LocationData`, `SavedLocation`, `WeatherResult` (Success/Stale/Failure + `WeatherError`), `RainInformation`, `WeatherRecommendation`/`UmbrellaAdvice`/`TodayOutlook`, `Commute*`, `UserPreferences` |
 | `domain/model/Place.kt` | `PlaceType`, `Place` (id, label, type, rounded coords, town), `Places` (list + homeId/officeId/defaultId, max 10), `PlaceSuggestion` |
-| `domain/model/AirQuality.kt` | `AirQuality` (US AQI, readings, 24 h peak, `mainPollutant`), `AqiCategory` (EPA bands), `Pollutant` |
+| `domain/model/AirQuality.kt` | `AirQuality` (US AQI, readings, 24 h peak, `mainPollutant`), `AqiCategory` (EPA bands), `Pollutant`, `PollenReading`/`PollenLevels` (NAB bands per tree/grass/weed; empty list = no data, i.e. outside Europe) |
 | `domain/model/Travel.kt` | `TransportMode`, `WeatherHazard` (most serious first), `Impact`, `TravelRating`, `TravelTip`, `LegAdvice`, `OfficeWeatherScore`/`ScoreBand`, `ChecklistEntry`, `OfficeDay` |
 | `domain/usecase/` (office) | `HazardAnalysis` (thresholds: rain, heavy rain, thunder, wintry, wind + gusts, visibility, heat, UV), `TravelAdvisor` (hazard × transport impact table → rating + tips), `OfficeScore` (100 − rain×0.3 − hazard penalties; ≥75 Good, ≥45 Moderate), `TravelChecklist`, `OfficeDayPlanner` (builds `OfficeDay`), `CommuteAnalysis.workdayHours`, `SevereWeatherAnalysis` (24 h, hour-by-hour hazards grouped into `WeatherAlert`s, Severe vs Advisory, commute overlap) + `RainSoon` |
 | `domain/usecase/` | `RainAnalysis` (≥40% likely; periods merge across 1 dry hour; ≥60% or raining → umbrella Recommended, ≥30% or ≥1 mm → Consider; rest of today, ≥6 h; `summary()` → `RainSummary`), `CommuteAnalysis` (departure hour + next; windy ≥39 km/h; after evening trip → tomorrow) |
@@ -91,7 +91,7 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 | `presentation/components/` | `RelativeAge`, `LocalUserPreferences`, `SystemIntents` (permissions, settings/URL intents, notification helpers) |
 | `ui/theme/` | Colours, typography, shapes, `WeatherBackdrop`, `LocalDarkTheme`, `ColorScheme.cardContainer` |
 
-Tests (`app/src/test/...`): **326 tests**, all passing; lint clean. Helpers in `testing/`: `SampleForecasts` (+`hour()` builder; its 10 Oct 2026 is a **Saturday**, so set days/workdays explicitly), `FakeNotificationScheduler`, `FakeAirQualityRepository`, `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVMs). Create ViewModels *after* `MainDispatcherRule` is active (use `by lazy` for fields).
+Tests (`app/src/test/...`): **329 tests**, all passing; lint clean. Helpers in `testing/`: `SampleForecasts` (+`hour()` builder; its 10 Oct 2026 is a **Saturday**, so set days/workdays explicitly), `FakeNotificationScheduler`, `FakeAirQualityRepository`, `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVMs). Create ViewModels *after* `MainDispatcherRule` is active (use `by lazy` for fields).
 
 ## 7. Key behaviour & decisions
 
@@ -113,8 +113,9 @@ Verified on the emulator (2026-10-11): Today, 7-day + expanded day, notification
 3. Multiple saved places with Home/Office/default roles, Open-Meteo place search, per-place offline cache, commute uses home + office forecasts (UI and notifications).
 4. Severe-weather alerts (card + notification + Settings switch), rain soon, poor visibility and heat advisories (`AlertUi.describe`).
 5. Air quality via Open-Meteo air-quality API (`AirQualityCard`, expandable details).
-6. (next) Pollen: Open-Meteo pollen is CAMS **Europe only** (null elsewhere, e.g. Pakistan) → show only where data exists.
-7. UV alerts · 8. Widget · 9. Wear OS · 10. Polish + security pass, "all rights reserved" licence, signed APK in `D:\DailyWeather\` (owner asked on 2026-10-12).
+6. Pollen from the same air-quality call: Open-Meteo pollen is CAMS **Europe only** (null elsewhere, e.g. Pakistan), so it is shown only where data exists, with an "unavailable for this region" note.
+7. (next) UV status + UV alerts.
+8. Widget · 9. Wear OS · 10. Polish + security pass, "all rights reserved" licence, signed APK in `D:\DailyWeather\` (owner asked on 2026-10-12).
 
 Not yet verified on a device: offline/airplane mode, °F and Dark theme switching, reboot persistence, Privacy page in the release build.
 

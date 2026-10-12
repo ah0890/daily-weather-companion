@@ -2,6 +2,8 @@ package com.ah0890.dailyweather.data.remote.openmeteo
 
 import com.ah0890.dailyweather.domain.model.AirQuality
 import com.ah0890.dailyweather.domain.model.Coordinates
+import com.ah0890.dailyweather.domain.model.PollenReading
+import com.ah0890.dailyweather.domain.model.PollenType
 import com.ah0890.dailyweather.domain.model.Pollutant
 import com.ah0890.dailyweather.domain.model.PollutantReading
 import com.ah0890.dailyweather.domain.repository.AirQualityRepository
@@ -35,7 +37,7 @@ interface OpenMeteoAirQualityApi {
         const val BASE_URL = "https://air-quality-api.open-meteo.com/"
         const val CURRENT_FIELDS = "us_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide," +
             "us_aqi_pm2_5,us_aqi_pm10,us_aqi_ozone,us_aqi_nitrogen_dioxide,us_aqi_sulphur_dioxide,us_aqi_carbon_monoxide"
-        const val HOURLY_FIELDS = "us_aqi"
+        const val HOURLY_FIELDS = "us_aqi,alder_pollen,birch_pollen,olive_pollen,grass_pollen,mugwort_pollen,ragweed_pollen"
     }
 }
 
@@ -67,6 +69,12 @@ data class AirQualityCurrentDto(
 data class AirQualityHourlyDto(
     val time: List<String>? = null,
     @SerialName("us_aqi") val usAqi: List<Int?>? = null,
+    @SerialName("alder_pollen") val alder: List<Double?>? = null,
+    @SerialName("birch_pollen") val birch: List<Double?>? = null,
+    @SerialName("olive_pollen") val olive: List<Double?>? = null,
+    @SerialName("grass_pollen") val grass: List<Double?>? = null,
+    @SerialName("mugwort_pollen") val mugwort: List<Double?>? = null,
+    @SerialName("ragweed_pollen") val ragweed: List<Double?>? = null,
 )
 
 /**
@@ -91,14 +99,26 @@ internal fun AirQualityResponseDto.toDomain(): AirQuality? {
     ).filter { it.concentration != null || it.index != null }
 
     val thisHour = time.truncatedTo(ChronoUnit.HOURS)
-    val upcoming = hourly?.time.orEmpty().mapIndexedNotNull { i, raw ->
+    // Indices of the hourly series that fall in the next 24 hours.
+    val next24 = hourly?.time.orEmpty().mapIndexedNotNull { i, raw ->
         val hour = runCatching { LocalDateTime.parse(raw) }.getOrNull() ?: return@mapIndexedNotNull null
-        val value = hourly?.usAqi?.getOrNull(i)?.takeIf { it >= 0 } ?: return@mapIndexedNotNull null
-        (hour to value).takeIf { !hour.isBefore(thisHour) && hour.isBefore(thisHour.plusHours(24)) }
+        (i to hour).takeIf { !hour.isBefore(thisHour) && hour.isBefore(thisHour.plusHours(24)) }
     }
-    val peak = upcoming.maxByOrNull { it.second }
+    val peak = next24.mapNotNull { (i, hour) -> hourly?.usAqi?.getOrNull(i)?.takeIf { it >= 0 }?.let { hour to it } }
+        .maxByOrNull { it.second }
 
-    return AirQuality(time, aqi, readings, peakUsAqi = peak?.second, peakTime = peak?.first)
+    fun pollen(type: PollenType, vararg series: List<Double?>?): PollenReading? =
+        next24.flatMap { (i, _) -> series.mapNotNull { it?.getOrNull(i)?.takeIf { v -> v >= 0 } } }
+            .maxOrNull()
+            ?.let { PollenReading(type, it) }
+
+    val pollen = listOfNotNull(
+        pollen(PollenType.Tree, hourly?.alder, hourly?.birch, hourly?.olive),
+        pollen(PollenType.Grass, hourly?.grass),
+        pollen(PollenType.Weed, hourly?.mugwort, hourly?.ragweed),
+    )
+
+    return AirQuality(time, aqi, readings, peakUsAqi = peak?.second, peakTime = peak?.first, pollen = pollen)
 }
 
 /**

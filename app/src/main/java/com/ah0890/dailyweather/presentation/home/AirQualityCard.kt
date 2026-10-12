@@ -25,12 +25,15 @@ import androidx.compose.ui.unit.dp
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.AirQuality
 import com.ah0890.dailyweather.domain.model.AqiCategory
+import com.ah0890.dailyweather.domain.model.PollenLevel
+import com.ah0890.dailyweather.domain.model.PollenType
 import com.ah0890.dailyweather.domain.model.Pollutant
 import com.ah0890.dailyweather.presentation.weather.rememberHourFormatter
 import com.ah0890.dailyweather.ui.theme.cardContainer
 import java.util.Locale
+import kotlin.math.roundToInt
 
-/** "🌫️ Air quality: Moderate" up front; pollutant details only when asked for. */
+/** "Air quality: Moderate" and the pollen level up front; pollutant and pollen details on tap. */
 @Composable
 fun AirQualityCard(state: AirQualityUiState) {
     when (state) {
@@ -63,6 +66,15 @@ private fun Details(air: AirQuality) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        air.highestPollen?.let { pollen ->
+            Line(
+                stringResource(
+                    R.string.pollen_summary,
+                    stringResource(pollen.level.labelRes),
+                    stringResource(pollen.type.labelRes),
+                ),
+            )
+        }
         val peak = air.peakUsAqi
         val peakTime = air.peakTime
         if (peak != null && peakTime != null && AqiCategory.of(peak) > air.category) {
@@ -82,6 +94,32 @@ private fun Details(air: AirQuality) {
                         Text(
                             text = reading.index?.let { stringResource(R.string.air_reading, amount, it) }
                                 ?: stringResource(R.string.air_reading_no_index, amount),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                if (air.pollen.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.pollen_unavailable),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                air.pollen.forEach { reading ->
+                    Row(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+                        Text(
+                            text = stringResource(reading.type.labelRes),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = stringResource(
+                                R.string.pollen_reading,
+                                stringResource(reading.level.labelRes),
+                                reading.grainsPerCubicMetre.roundToInt().toString(),
+                            ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -137,6 +175,23 @@ private val AqiCategory.labelRes: Int
         AqiCategory.Unhealthy -> R.string.aqi_unhealthy
         AqiCategory.VeryUnhealthy -> R.string.aqi_very_unhealthy
         AqiCategory.Hazardous -> R.string.aqi_hazardous
+    }
+
+@get:StringRes
+private val PollenLevel.labelRes: Int
+    get() = when (this) {
+        PollenLevel.Low -> R.string.pollen_low
+        PollenLevel.Moderate -> R.string.pollen_moderate
+        PollenLevel.High -> R.string.pollen_high
+        PollenLevel.VeryHigh -> R.string.pollen_very_high
+    }
+
+@get:StringRes
+private val PollenType.labelRes: Int
+    get() = when (this) {
+        PollenType.Tree -> R.string.pollen_tree
+        PollenType.Grass -> R.string.pollen_grass
+        PollenType.Weed -> R.string.pollen_weed
     }
 
 @get:StringRes

@@ -2,6 +2,10 @@ package com.ah0890.dailyweather.data.remote.openmeteo
 
 import com.ah0890.dailyweather.domain.model.AqiCategory
 import com.ah0890.dailyweather.domain.model.Coordinates
+import com.ah0890.dailyweather.domain.model.PollenLevel
+import com.ah0890.dailyweather.domain.model.PollenLevels
+import com.ah0890.dailyweather.domain.model.PollenReading
+import com.ah0890.dailyweather.domain.model.PollenType
 import com.ah0890.dailyweather.domain.model.Pollutant
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
@@ -126,5 +130,63 @@ class OpenMeteoAirQualityTest {
         clock.now = clock.now.plusSeconds(4 * 3600)
 
         assertNull(repository.airQuality(london))
+    }
+
+    @Test
+    fun `pollen is the highest count per type in the next 24 hours`() = runTest {
+        server.enqueue(
+            json(
+                """{"current":{"time":"2026-05-12T09:00","us_aqi":30},
+                    "hourly":{"time":["2026-05-12T08:00","2026-05-12T09:00","2026-05-12T10:00"],
+                              "us_aqi":[30,30,30],
+                              "alder_pollen":[900.0,0.0,1.0],"birch_pollen":[0.0,95.0,40.0],"olive_pollen":[null,null,null],
+                              "grass_pollen":[0.0,12.0,25.0],
+                              "mugwort_pollen":[0.0,0.0,0.0],"ragweed_pollen":[null,null,null]}}""",
+            ),
+        )
+
+        val air = repository.airQuality(london)!!
+
+        // 08:00 is already past, so alder's 900 doesn't count.
+        assertEquals(
+            listOf(
+                PollenReading(PollenType.Tree, 95.0),
+                PollenReading(PollenType.Grass, 25.0),
+                PollenReading(PollenType.Weed, 0.0),
+            ),
+            air.pollen,
+        )
+        assertEquals(PollenType.Tree, air.highestPollen!!.type)
+        assertEquals(PollenLevel.High, air.highestPollen!!.level)
+    }
+
+    @Test
+    fun `outside europe there is no pollen data and none is invented`() = runTest {
+        server.enqueue(
+            json(
+                """{"current":{"time":"2026-10-12T19:00","us_aqi":111},
+                    "hourly":{"time":["2026-10-12T19:00"],"us_aqi":[111],"grass_pollen":[null],"birch_pollen":[null]}}""",
+            ),
+        )
+
+        val air = repository.airQuality(london)!!
+
+        assertEquals(emptyList<PollenReading>(), air.pollen)
+        assertNull(air.highestPollen)
+    }
+
+    @Test
+    fun `pollen levels follow the national allergy bureau bands`() {
+        assertEquals(PollenLevel.Low, PollenLevels.of(PollenType.Tree, 14.9))
+        assertEquals(PollenLevel.Moderate, PollenLevels.of(PollenType.Tree, 15.0))
+        assertEquals(PollenLevel.High, PollenLevels.of(PollenType.Tree, 90.0))
+        assertEquals(PollenLevel.VeryHigh, PollenLevels.of(PollenType.Tree, 1500.0))
+        assertEquals(PollenLevel.Low, PollenLevels.of(PollenType.Grass, 4.9))
+        assertEquals(PollenLevel.Moderate, PollenLevels.of(PollenType.Grass, 5.0))
+        assertEquals(PollenLevel.High, PollenLevels.of(PollenType.Grass, 20.0))
+        assertEquals(PollenLevel.VeryHigh, PollenLevels.of(PollenType.Grass, 200.0))
+        assertEquals(PollenLevel.Moderate, PollenLevels.of(PollenType.Weed, 10.0))
+        assertEquals(PollenLevel.High, PollenLevels.of(PollenType.Weed, 50.0))
+        assertEquals(PollenLevel.VeryHigh, PollenLevels.of(PollenType.Weed, 500.0))
     }
 }
