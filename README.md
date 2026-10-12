@@ -167,7 +167,7 @@ The Today screen shows one simple line, e.g. **🟡 Air quality: Moderate** · U
 
 ## UV Status and UV Alerts
 
-Hourly UV from the forecast gives today's remaining peak, e.g. **🟠 UV: High · up to 7 around 12 PM**, the hours rated high (*"UV 6 or higher from 11 AM to 3 PM"*) and, from *Moderate* up, *"Consider sun protection if you'll be outdoors."* Categories follow the WHO bands on the index as displayed (rounded): Low 0–2, Moderate 3–5, High 6–7, Very high 8–10, Extreme 11+.
+Hourly UV from the forecast gives today's remaining peak, e.g. **🟠 UV: High (up to 7) around 12 PM**, the hours rated high (*"UV 6 or higher from 11 AM to 3 PM"*) and, from *Moderate* up, *"Consider sun protection if you'll be outdoors."* Categories follow the WHO bands on the index as displayed (rounded): Low 0–2, Moderate 3–5, High 6–7, Very high 8–10, Extreme 11+.
 
 The **UV alert** (Settings → Notifications, default on from *High*, or from *Very high*) highlights the card and adds a line to the morning summary: *"☀️ High UV (7) expected around 12 PM. Consider sun protection if you'll be outdoors."* No medical advice is given.
 

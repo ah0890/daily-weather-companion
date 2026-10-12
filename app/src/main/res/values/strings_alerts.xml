@@ -21,9 +21,9 @@
     <string name="rain_soon_none">☀️ No significant rain expected in the next two hours.</string>
 
     <!-- UV status -->
-    <!-- e.g. "UV: High · up to 7 around 12 PM" -->
-    <string name="uv_status">UV: %1$s · up to %2$d around %3$s</string>
-    <string name="uv_status_no_time">UV: %1$s · up to %2$d today</string>
+    <!-- e.g. "UV: High (up to 7) around 12 PM" -->
+    <string name="uv_status">UV: %1$s (up to %2$d) around %3$s</string>
+    <string name="uv_status_no_time">UV: %1$s (up to %2$d) today</string>
     <string name="uv_high_hours">UV 6 or higher from %1$s to %2$s</string>
     <string name="uv_tip">Consider sun protection if you\'ll be outdoors.</string>
     <!-- Morning summary line, e.g. "☀️ High UV (7) expected around 12 PM." -->
