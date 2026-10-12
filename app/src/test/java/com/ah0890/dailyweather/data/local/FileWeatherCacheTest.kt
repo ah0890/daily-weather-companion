@@ -17,20 +17,21 @@ class FileWeatherCacheTest {
     @get:Rule
     val tempFolder = TemporaryFolder()
 
-    private val file by lazy { File(tempFolder.root, "weather_cache.json") }
+    private val dir by lazy { tempFolder.root }
+    private val file by lazy { FileWeatherCache(dir).fileFor(SampleForecasts.london) }
     private val fetchedAt = Instant.parse("2026-10-10T06:45:00Z")
     private val forecast = SampleForecasts.forecast()
 
     @Test
     fun `missing file means no cache`() = runTest {
-        assertNull(FileWeatherCache(file).load(SampleForecasts.london))
+        assertNull(FileWeatherCache(dir).load(SampleForecasts.london))
     }
 
     @Test
     fun `saved forecast is read back unchanged`() = runTest {
-        FileWeatherCache(file).save(forecast, fetchedAt)
+        FileWeatherCache(dir).save(forecast, fetchedAt)
 
-        assertEquals(CachedForecast(forecast, fetchedAt), FileWeatherCache(file).load(SampleForecasts.london))
+        assertEquals(CachedForecast(forecast, fetchedAt), FileWeatherCache(dir).load(SampleForecasts.london))
     }
 
     @Test
@@ -38,14 +39,14 @@ class FileWeatherCacheTest {
         val detailed = forecast.copy(
             hourly = forecast.hourly.map { it.copy(windGustsKmh = 48.0, visibilityMeters = 900.0, uvIndex = 6.5) },
         )
-        FileWeatherCache(file).save(detailed, fetchedAt)
+        FileWeatherCache(dir).save(detailed, fetchedAt)
 
-        assertEquals(detailed, FileWeatherCache(file).load(SampleForecasts.london)!!.forecast)
+        assertEquals(detailed, FileWeatherCache(dir).load(SampleForecasts.london)!!.forecast)
     }
 
     @Test
     fun `saving again replaces the previous forecast`() = runTest {
-        val cache = FileWeatherCache(file)
+        val cache = FileWeatherCache(dir)
         cache.save(forecast, fetchedAt)
         cache.save(forecast, fetchedAt.plusSeconds(3600))
 
@@ -55,38 +56,74 @@ class FileWeatherCacheTest {
 
     @Test
     fun `a forecast for another place is not returned`() = runTest {
-        FileWeatherCache(file).save(forecast, fetchedAt)
+        FileWeatherCache(dir).save(forecast, fetchedAt)
 
-        assertNull(FileWeatherCache(file).load(Coordinates(48.86, 2.35)))
+        assertNull(FileWeatherCache(dir).load(Coordinates(48.86, 2.35)))
     }
 
     @Test
     fun `nearby coordinates in the same 1 km cell match`() = runTest {
-        FileWeatherCache(file).save(forecast, fetchedAt)
+        FileWeatherCache(dir).save(forecast, fetchedAt)
 
-        assertEquals(fetchedAt, FileWeatherCache(file).load(Coordinates(51.5149, -0.1252))!!.fetchedAt)
+        assertEquals(fetchedAt, FileWeatherCache(dir).load(Coordinates(51.5149, -0.1252))!!.fetchedAt)
     }
 
     @Test
     fun `corrupted file is treated as empty`() = runTest {
         file.writeText("{ not valid json")
 
-        assertNull(FileWeatherCache(file).load(SampleForecasts.london))
+        assertNull(FileWeatherCache(dir).load(SampleForecasts.london))
     }
 
     @Test
     fun `file from a different format version is ignored`() = runTest {
-        FileWeatherCache(file).save(forecast, fetchedAt)
+        FileWeatherCache(dir).save(forecast, fetchedAt)
         file.writeText(file.readText().replace("\"version\":1", "\"version\":99"))
 
-        assertNull(FileWeatherCache(file).load(SampleForecasts.london))
+        assertNull(FileWeatherCache(dir).load(SampleForecasts.london))
     }
 
     @Test
     fun `invalid stored values are treated as empty`() = runTest {
-        FileWeatherCache(file).save(forecast, fetchedAt)
+        FileWeatherCache(dir).save(forecast, fetchedAt)
         file.writeText(file.readText().replace("Europe/London", "Not/AZone"))
 
-        assertNull(FileWeatherCache(file).load(SampleForecasts.london))
+        assertNull(FileWeatherCache(dir).load(SampleForecasts.london))
+    }
+
+    @Test
+    fun `forecasts for several places are kept side by side`() = runTest {
+        val cache = FileWeatherCache(dir)
+        val paris = SampleForecasts.forecast(coordinates = Coordinates(48.86, 2.35))
+        cache.save(forecast, fetchedAt)
+        cache.save(paris, fetchedAt.plusSeconds(60))
+
+        assertEquals(fetchedAt, cache.load(SampleForecasts.london)!!.fetchedAt)
+        assertEquals(paris, cache.load(Coordinates(48.86, 2.35))!!.forecast)
+    }
+
+    @Test
+    fun `only the most recent places are kept`() = runTest {
+        val cache = FileWeatherCache(dir, maxEntries = 2)
+        val (a, b, c) = listOf(Coordinates(10.0, 10.0), Coordinates(20.0, 20.0), Coordinates(30.0, 30.0))
+        cache.save(SampleForecasts.forecast(coordinates = a), fetchedAt)
+        cache.fileFor(a).setLastModified(1_000_000)
+        cache.save(SampleForecasts.forecast(coordinates = b), fetchedAt)
+        cache.fileFor(b).setLastModified(2_000_000)
+
+        cache.save(SampleForecasts.forecast(coordinates = c), fetchedAt)
+
+        assertNull(cache.load(a))
+        assertEquals(fetchedAt, cache.load(b)!!.fetchedAt)
+        assertEquals(fetchedAt, cache.load(c)!!.fetchedAt)
+    }
+
+    @Test
+    fun `the old single-file cache is removed`() = runTest {
+        val legacy = File(dir, "weather_cache.json").apply { writeText("{}") }
+
+        FileWeatherCache(File(dir, "cache"), legacyFile = legacy).save(forecast, fetchedAt)
+
+        assertFalse(legacy.exists())
     }
 }

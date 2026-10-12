@@ -6,11 +6,15 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.ah0890.dailyweather.data.local.DataStoreLocationRepository
+import com.ah0890.dailyweather.data.local.DataStorePlacesRepository
 import com.ah0890.dailyweather.data.local.DataStorePreferencesRepository
 import com.ah0890.dailyweather.data.local.FileWeatherCache
 import com.ah0890.dailyweather.data.remote.openmeteo.OpenMeteoDataSource
+import com.ah0890.dailyweather.data.remote.openmeteo.OpenMeteoPlaceSearch
 import com.ah0890.dailyweather.data.repository.DefaultWeatherRepository
 import com.ah0890.dailyweather.domain.repository.LocationRepository
+import com.ah0890.dailyweather.domain.repository.PlaceSearchRepository
+import com.ah0890.dailyweather.domain.repository.PlacesRepository
 import com.ah0890.dailyweather.domain.repository.PreferencesRepository
 import com.ah0890.dailyweather.domain.repository.WeatherRepository
 import com.ah0890.dailyweather.location.AndroidLocationProvider
@@ -32,7 +36,10 @@ class AppContainer(context: Context) {
     val weatherRepository: WeatherRepository by lazy {
         DefaultWeatherRepository(
             remote = OpenMeteoDataSource.create(),
-            cache = FileWeatherCache(File(appContext.filesDir, "weather_cache.json")),
+            cache = FileWeatherCache(
+                directory = File(appContext.filesDir, "weather_cache"),
+                legacyFile = File(appContext.filesDir, "weather_cache.json"),
+            ),
         )
     }
 
@@ -48,6 +55,17 @@ class AppContainer(context: Context) {
             ),
         )
     }
+
+    val placesRepository: PlacesRepository by lazy {
+        DataStorePlacesRepository(
+            PreferenceDataStoreFactory.create(
+                corruptionHandler = ReplaceFileCorruptionHandler { emptyPreferences() },
+                produceFile = { appContext.preferencesDataStoreFile("places") },
+            ),
+        )
+    }
+
+    val placeSearch: PlaceSearchRepository by lazy { OpenMeteoPlaceSearch.create() }
 
     val locationRepository: LocationRepository by lazy {
         DataStoreLocationRepository(

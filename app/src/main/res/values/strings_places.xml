@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Place types -->
+    <string name="place_type_home">Home</string>
+    <string name="place_type_office">Office</string>
+    <string name="place_type_parents">Parents</string>
+    <string name="place_type_other">Other</string>
+
+    <!-- Settings: saved places -->
+    <string name="settings_section_places">Saved places</string>
+    <string name="places_empty">No saved places yet. Add your home and office to get the weather where each trip starts.</string>
+    <string name="places_add">Add place</string>
+    <plurals name="places_full">
+        <item quantity="one">You can save up to %1$d place.</item>
+        <item quantity="other">You can save up to %1$d places.</item>
+    </plurals>
+    <string name="places_hint">Places are kept on this phone at about 1 km precision. Only the forecasts for the place shown and your home and office are downloaded.</string>
+    <string name="places_role_home">Commute home</string>
+    <string name="places_role_office">Commute office</string>
+    <string name="places_role_default">Shown first</string>
+
+    <!-- Add / edit dialogs -->
+    <string name="places_add_title">Add a place</string>
+    <string name="places_edit_title">Edit place</string>
+    <string name="places_name">Name</string>
+    <string name="places_type">Type</string>
+    <string name="places_use_current">Use my current location</string>
+    <string name="places_or_search">Or search for a town or city</string>
+    <string name="places_search">Search</string>
+    <string name="places_search_hint">e.g. Islamabad</string>
+    <string name="places_searching">Searching…</string>
+    <string name="places_no_results">No places found. Try another spelling or a nearby town.</string>
+    <string name="places_search_failed">Search isn\'t available right now. Check your connection and try again.</string>
+    <string name="places_locating">Finding your location…</string>
+    <string name="places_location_failed">Couldn\'t find your location. Make sure location is on and allowed for the app, or search instead.</string>
+    <string name="places_save_failed">The place couldn\'t be saved. Please try again.</string>
+    <string name="places_set_home">Use as commute home</string>
+    <string name="places_set_home_summary">Morning trip starts here</string>
+    <string name="places_set_office">Use as commute office</string>
+    <string name="places_set_office_summary">Evening trip starts here</string>
+    <string name="places_set_default">Show first</string>
+    <string name="places_set_default_summary">The Today screen opens with this place</string>
+    <string name="places_save">Save</string>
+    <string name="places_delete">Delete</string>
+    <string name="places_cancel">Cancel</string>
+
+    <!-- Today screen location picker -->
+    <string name="places_choose">Choose location</string>
+    <string name="places_current_location">Current location</string>
+    <string name="places_saved_place">Saved place</string>
+    <!-- Commute route with place names, e.g. "Home → Office" -->
+    <string name="office_day_route">%1$s → %2$s</string>
+</resources>

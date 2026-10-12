@@ -28,11 +28,15 @@ object CommuteAnalysis {
      * Commute for the next workday: today until its evening trip is over, otherwise the next day
      * in [workdays]. Legs already in the past are left out. Returns null if no workday is set or
      * the forecast doesn't cover the chosen day.
+     *
+     * @param forecast weather where the morning trip starts (home).
+     * @param officeForecast weather where the evening trip starts, when the office is elsewhere.
      */
     fun summary(
         forecast: WeatherForecast,
         times: CommuteTimes,
         workdays: Set<DayOfWeek> = UserPreferences.EVERY_DAY,
+        officeForecast: WeatherForecast = forecast,
     ): CommuteSummary? {
         val now = forecast.current.time
         val today = now.toLocalDate()
@@ -40,7 +44,7 @@ object CommuteAnalysis {
         val first = if (eveningOver) today.plusDays(1) else today
         val date = generateSequence(first) { it.plusDays(1) }.take(7).firstOrNull { it.dayOfWeek in workdays } ?: return null
 
-        val legs = legsOn(forecast, date, times)
+        val legs = legsOn(forecast, date, times, officeForecast)
             .filter { date != today || it.departure.plusHours(TRIP_HOURS - 1).isAfter(now) }
         if (legs.isEmpty()) return null
 
@@ -48,9 +52,14 @@ object CommuteAnalysis {
     }
 
     /** Both trips on [date], including ones already in the past (for planning views). */
-    fun legsOn(forecast: WeatherForecast, date: LocalDate, times: CommuteTimes): List<CommuteLeg> = listOfNotNull(
+    fun legsOn(
+        forecast: WeatherForecast,
+        date: LocalDate,
+        times: CommuteTimes,
+        officeForecast: WeatherForecast = forecast,
+    ): List<CommuteLeg> = listOfNotNull(
         leg(forecast, CommuteLegType.Morning, date, times.morning),
-        leg(forecast, CommuteLegType.Evening, date, times.evening),
+        leg(officeForecast, CommuteLegType.Evening, date, times.evening),
     )
 
     /**

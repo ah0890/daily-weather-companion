@@ -61,6 +61,8 @@ fun OfficeDayCard(
     mode: TransportMode,
     today: LocalDate,
     onChangeTransport: () -> Unit,
+    homeName: String? = null,
+    officeName: String? = null,
 ) {
     Card(
         shape = MaterialTheme.shapes.extraLarge,
@@ -90,7 +92,7 @@ fun OfficeDayCard(
             }
             advice.forEachIndexed { index, legAdvice ->
                 if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                LegSection(legAdvice)
+                LegSection(legAdvice, homeName, officeName)
             }
             Text(
                 text = stringResource(R.string.score_disclaimer),
@@ -128,7 +130,7 @@ private fun ScoreChip(score: OfficeWeatherScore) {
 }
 
 @Composable
-private fun LegSection(advice: LegAdvice) {
+private fun LegSection(advice: LegAdvice, homeName: String?, officeName: String?) {
     val leg = advice.leg
     val timeFormatter = remember { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT) }
     val hourFormatter = rememberHourFormatter()
@@ -144,7 +146,7 @@ private fun LegSection(advice: LegAdvice) {
             Text(
                 text = stringResource(
                     R.string.office_day_route_time,
-                    stringResource(if (morning) R.string.office_day_route_morning else R.string.office_day_route_evening),
+                    route(morning, homeName ?: stringResource(R.string.place_type_home), officeName ?: stringResource(R.string.place_type_office)),
                     leg.departure.format(timeFormatter),
                 ),
                 style = MaterialTheme.typography.labelMedium,
@@ -206,6 +208,11 @@ private fun LegSection(advice: LegAdvice) {
         }
     }
 }
+
+/** "Home → Office" in the morning, "Office → Home" in the evening. */
+@Composable
+private fun route(morning: Boolean, home: String, office: String): String =
+    if (morning) stringResource(R.string.office_day_route, home, office) else stringResource(R.string.office_day_route, office, home)
 
 /** "Office day", "Tomorrow's office day" or "Office day · Monday". */
 @Composable

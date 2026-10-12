@@ -31,7 +31,10 @@ data class DailySummary(
     val commute: List<LegAdvice> = emptyList(),
 ) {
     companion object {
-        /** Summary of [forecast] as seen at [now] (location-local), for the rest of that day. */
+        /**
+         * Summary of [forecast] (home) as seen at [now] (location-local), for the rest of that day.
+         * The evening trip uses [officeForecast] when the office is elsewhere.
+         */
         fun from(
             forecast: WeatherForecast,
             locationName: String?,
@@ -39,11 +42,13 @@ data class DailySummary(
             times: CommuteTimes = CommuteTimes(),
             mode: TransportMode = TransportMode.Other,
             workdays: Set<DayOfWeek> = emptySet(),
+            officeForecast: WeatherForecast = forecast,
         ): DailySummary {
             val current = forecast.advancedTo(now)
             val outlook = RainAnalysis.outlookForRestOfToday(current)
             val today = current.today
-            val officeDay = OfficeDayPlanner.plan(current, times, mode, workdays)?.takeIf { it.summary.isToday }
+            val officeDay = OfficeDayPlanner.plan(current, times, mode, workdays, officeForecast.advancedTo(now))
+                ?.takeIf { it.summary.isToday }
             return DailySummary(
                 locationName = locationName,
                 // The day's overall condition reads better in the morning than the current hour's.

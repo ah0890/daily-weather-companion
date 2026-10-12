@@ -18,12 +18,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Button
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,9 +42,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -52,6 +59,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.Coordinates
 import com.ah0890.dailyweather.domain.model.LocationData
+import com.ah0890.dailyweather.domain.model.Places
 import com.ah0890.dailyweather.domain.model.SavedLocation
 import com.ah0890.dailyweather.presentation.components.LOCATION_PERMISSION
 import com.ah0890.dailyweather.presentation.components.LocalUserPreferences
@@ -63,6 +71,7 @@ import com.ah0890.dailyweather.presentation.components.openSettings
 import com.ah0890.dailyweather.presentation.components.requestNotificationPermission
 import com.ah0890.dailyweather.presentation.components.text
 import com.ah0890.dailyweather.presentation.settings.SettingsViewModel
+import com.ah0890.dailyweather.presentation.weather.title
 import com.ah0890.dailyweather.ui.theme.DailyWeatherTheme
 import com.ah0890.dailyweather.ui.theme.cardContainer
 import java.time.Instant
@@ -79,6 +88,8 @@ fun HomeRoute(
 ) {
     val state by viewModel.locationState.collectAsStateWithLifecycle()
     val weather by viewModel.weatherState.collectAsStateWithLifecycle()
+    val places by viewModel.places.collectAsStateWithLifecycle()
+    val commute by viewModel.commuteState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = LocalActivity.current
 
@@ -130,8 +141,15 @@ fun HomeRoute(
             allowNotifications = { notificationLauncher.requestNotificationPermission() },
             dismissNotificationPrompt = settingsViewModel::dismissNotificationPrompt,
             openSettings = onOpenSettings,
+            selectPlace = viewModel::selectPlace,
+            selectDeviceLocation = {
+                viewModel.selectDeviceLocation()
+                viewModel.onPermissionChecked(context.hasLocationPermission())
+            },
         ),
         notificationPromptTime = preferences.dailyNotificationTime.takeIf { showNotificationPrompt },
+        places = places,
+        commute = commute,
     )
 }
 
@@ -145,6 +163,8 @@ class HomeActions(
     val allowNotifications: () -> Unit = {},
     val dismissNotificationPrompt: () -> Unit = {},
     val openSettings: () -> Unit = {},
+    val selectPlace: (String) -> Unit = {},
+    val selectDeviceLocation: () -> Unit = {},
 )
 
 @Composable
@@ -154,6 +174,8 @@ fun HomeScreen(
     actions: HomeActions,
     modifier: Modifier = Modifier,
     notificationPromptTime: LocalTime? = null,
+    places: Places = Places(),
+    commute: CommuteForecasts = CommuteForecasts(),
 ) {
     val greeting = remember { greetingFor(LocalTime.now().hour) }
 
@@ -176,7 +198,7 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.semantics { heading() },
                 )
-                LocationHeader(state, onUpdateLocation = actions.updateLocation)
+                LocationHeader(state, places, actions)
             }
 
             val location = state.location
@@ -187,6 +209,8 @@ fun HomeScreen(
                     edgePadding = ScreenPadding,
                     onRetry = actions.refreshWeather,
                     onChangeTransport = actions.openSettings,
+                    commute = commute,
+                    places = places,
                 )
                 if (notificationPromptTime != null) {
                     NotificationPromptCard(
@@ -203,12 +227,30 @@ fun HomeScreen(
 }
 
 @Composable
-private fun LocationHeader(state: LocationUiState, onUpdateLocation: () -> Unit) {
+private fun LocationHeader(state: LocationUiState, places: Places, actions: HomeActions) {
     val location = state.location
+    var choosing by remember { mutableStateOf(false) }
+    val onChoose: (() -> Unit)? = if (places.places.isNotEmpty()) ({ choosing = true }) else null
     if (location == null) {
         // While checking or locating, the card below already says what is happening.
         if (state.status is LocationStatus.PermissionRequired || state.status is LocationStatus.Failed) {
-            LocationName(stringResource(R.string.location_not_set))
+            LocationName(stringResource(R.string.location_not_set), onChoose)
+        }
+        LocationMenu(choosing, places, state, actions, onClose = { choosing = false })
+        return
+    }
+
+    val place = state.place
+    if (place != null) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            LocationName(place.title, onChoose, showPin = false)
+            Text(
+                text = place.placeName ?: stringResource(R.string.places_saved_place),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp),
+            )
+            LocationMenu(choosing, places, state, actions, onClose = { choosing = false })
         }
         return
     }
@@ -218,7 +260,8 @@ private fun LocationHeader(state: LocationUiState, onUpdateLocation: () -> Unit)
     )
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            LocationName(location.location.name ?: sourceLabel)
+            LocationName(location.location.name ?: sourceLabel, onChoose)
+            LocationMenu(choosing, places, state, actions, onClose = { choosing = false })
             val detail = if (state.status == LocationStatus.Locating) {
                 stringResource(R.string.location_updating)
             } else {
@@ -244,7 +287,7 @@ private fun LocationHeader(state: LocationUiState, onUpdateLocation: () -> Unit)
             if (state.status == LocationStatus.Locating) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
             } else {
-                IconButton(onClick = onUpdateLocation) {
+                IconButton(onClick = actions.updateLocation) {
                     Icon(
                         imageVector = Icons.Rounded.Refresh,
                         contentDescription = stringResource(R.string.location_update),
@@ -256,23 +299,67 @@ private fun LocationHeader(state: LocationUiState, onUpdateLocation: () -> Unit)
     }
 }
 
+/** The location's name; with saved places it opens the location picker. */
 @Composable
-private fun LocationName(text: String) {
+private fun LocationName(text: String, onChoose: (() -> Unit)?, showPin: Boolean = true) {
+    val chooseLabel = stringResource(R.string.places_choose)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = if (onChoose != null) {
+            Modifier
+                .clip(MaterialTheme.shapes.small)
+                .clickable(onClickLabel = chooseLabel, role = Role.DropdownList, onClick = onChoose)
+                .padding(vertical = 4.dp, horizontal = 4.dp)
+        } else {
+            Modifier
+        },
     ) {
-        Icon(
-            imageVector = Icons.Rounded.LocationOn,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp),
-        )
+        if (showPin) {
+            Icon(
+                imageVector = Icons.Rounded.LocationOn,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp),
+            )
+        }
         Text(
             text = text,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
+        if (onChoose != null) {
+            Icon(
+                imageVector = Icons.Rounded.ArrowDropDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Current location plus every saved place; the one on screen is marked. */
+@Composable
+private fun LocationMenu(expanded: Boolean, places: Places, state: LocationUiState, actions: HomeActions, onClose: () -> Unit) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onClose) {
+        DropdownMenuItem(
+            text = { Text("📍 " + stringResource(R.string.places_current_location)) },
+            trailingIcon = { if (state.place == null) Icon(Icons.Rounded.Check, contentDescription = null) },
+            onClick = {
+                onClose()
+                actions.selectDeviceLocation()
+            },
+        )
+        places.places.forEach { place ->
+            DropdownMenuItem(
+                text = { Text(place.title) },
+                trailingIcon = { if (state.place?.id == place.id) Icon(Icons.Rounded.Check, contentDescription = null) },
+                onClick = {
+                    onClose()
+                    actions.selectPlace(place.id)
+                },
+            )
+        }
     }
 }
 

@@ -40,10 +40,11 @@ object WorkWeekAnalysis {
         times: CommuteTimes,
         mode: TransportMode,
         workdays: Set<DayOfWeek>,
+        officeForecast: WeatherForecast = forecast,
     ): WorkWeek {
         val days = forecast.daily.map { it.date }
             .filter { it.dayOfWeek in workdays }
-            .mapNotNull { date -> analyseDay(forecast, date, times, mode) }
+            .mapNotNull { date -> analyseDay(forecast, officeForecast, date, times, mode) }
             .associateBy { it.date }
 
         val ranked = days.values.sortedWith(compareByDescending<DayCommute> { it.score.value }.thenBy { it.date })
@@ -56,11 +57,17 @@ object WorkWeekAnalysis {
     }
 
     /** Null unless the forecast covers both trips, so partial days aren't compared with full ones. */
-    private fun analyseDay(forecast: WeatherForecast, date: LocalDate, times: CommuteTimes, mode: TransportMode): DayCommute? {
-        val legs = CommuteAnalysis.legsOn(forecast, date, times)
+    private fun analyseDay(
+        forecast: WeatherForecast,
+        officeForecast: WeatherForecast,
+        date: LocalDate,
+        times: CommuteTimes,
+        mode: TransportMode,
+    ): DayCommute? {
+        val legs = CommuteAnalysis.legsOn(forecast, date, times, officeForecast)
         if (legs.size < 2) return null
         val summary = CommuteSummary(date, isToday = false, legs = legs, advice = CommuteAnalysis.advice(legs))
-        val workday = CommuteAnalysis.workdayHours(forecast, summary)
+        val workday = CommuteAnalysis.workdayHours(officeForecast, summary)
         val advice = legs.map { TravelAdvisor.advise(it, mode) }
         val hazards = legs.flatMap { it.hazards }.toSet()
         val wet = hazards.any { it in WET }

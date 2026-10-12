@@ -54,6 +54,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ah0890.dailyweather.BuildConfig
 import com.ah0890.dailyweather.R
+import com.ah0890.dailyweather.domain.model.PlaceType
+import com.ah0890.dailyweather.domain.model.Places
 import com.ah0890.dailyweather.domain.model.SavedLocation
 import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.ThemeMode
@@ -91,8 +93,11 @@ fun SettingsRoute(
     onOpenPrivacy: () -> Unit,
     onLocationUpdateRequested: () -> Unit,
     settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
+    placesViewModel: PlacesViewModel = viewModel(factory = PlacesViewModel.Factory),
 ) {
     val preferences by settingsViewModel.preferences.collectAsStateWithLifecycle()
+    val places by placesViewModel.places.collectAsStateWithLifecycle()
+    val addPlaceState by placesViewModel.addState.collectAsStateWithLifecycle()
     val location by weatherViewModel.locationState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = LocalActivity.current
@@ -132,9 +137,37 @@ fun SettingsRoute(
         }
     }
 
+    // "Use my current location" when adding a place may need the location permission first.
+    var pendingPlace by remember { mutableStateOf<Pair<String, PlaceType>?>(null) }
+    val placePermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val (name, type) = pendingPlace ?: return@rememberLauncherForActivityResult
+        pendingPlace = null
+        if (granted) placesViewModel.addCurrentLocation(name, type)
+    }
+
     SettingsScreen(
         preferences = preferences,
-        savedLocation = location.location,
+        places = places,
+        addPlaceState = addPlaceState,
+        placesActions = PlacesActions(
+            search = placesViewModel::search,
+            addSuggestion = placesViewModel::addSuggestion,
+            addCurrentLocation = { name, type ->
+                if (context.hasLocationPermission()) {
+                    placesViewModel.addCurrentLocation(name, type)
+                } else {
+                    pendingPlace = name to type
+                    placePermissionLauncher.launch(LOCATION_PERMISSION)
+                }
+            },
+            resetAdd = placesViewModel::resetAdd,
+            update = placesViewModel::update,
+            delete = placesViewModel::delete,
+            setHome = placesViewModel::setHome,
+            setOffice = placesViewModel::setOffice,
+            setDefault = placesViewModel::setDefault,
+        ),
+        savedLocation = location.deviceLocation,
         notificationsAllowed = notificationsAllowed,
         actions = SettingsActions(
             updateLocation = {
@@ -194,6 +227,9 @@ fun SettingsScreen(
     notificationsAllowed: Boolean,
     actions: SettingsActions,
     modifier: Modifier = Modifier,
+    places: Places = Places(),
+    addPlaceState: AddPlaceState = AddPlaceState.Idle,
+    placesActions: PlacesActions = PlacesActions(),
 ) {
     val timeFormatter = remember { DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT) }
     // Which commute time is being edited, if any (survives rotation).
@@ -240,6 +276,10 @@ fun SettingsScreen(
                     Text(stringResource(R.string.settings_location_update))
                 }
             }
+        }
+
+        Section(R.string.settings_section_places) {
+            Column { PlacesSectionContent(places, addPlaceState, placesActions) }
         }
 
         Section(R.string.settings_section_notifications) {

@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ah0890.dailyweather.R
+import com.ah0890.dailyweather.domain.model.Places
 import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.model.WeatherForecast
 import com.ah0890.dailyweather.domain.usecase.OfficeDayPlanner
@@ -75,6 +76,8 @@ fun CurrentWeatherSection(
     edgePadding: Dp,
     onRetry: () -> Unit,
     onChangeTransport: () -> Unit = {},
+    commute: CommuteForecasts = CommuteForecasts(),
+    places: Places = Places(),
 ) {
     val preferences = LocalUserPreferences.current
     // Fade between loading, error and loaded; refreshes within "loaded" update in place.
@@ -89,7 +92,7 @@ fun CurrentWeatherSection(
         label = "weather",
     ) { shown ->
         Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-            WeatherContent(shown, edgePadding, onRetry, preferences, onChangeTransport)
+            WeatherContent(shown, edgePadding, onRetry, preferences, onChangeTransport, commute, places)
         }
     }
 }
@@ -101,6 +104,8 @@ private fun WeatherContent(
     onRetry: () -> Unit,
     preferences: UserPreferences,
     onChangeTransport: () -> Unit,
+    commute: CommuteForecasts,
+    places: Places,
 ) {
     when (state) {
         WeatherUiState.Idle -> Unit
@@ -110,12 +115,24 @@ private fun WeatherContent(
             CurrentWeatherCard(state.forecast, state.fetchedAt)
             StaleForecastNotice(state.fetchedAt, state.refreshError)
             val mode = preferences.transportMode
-            val officeDay = remember(state.forecast, preferences.commuteTimes, mode, preferences.workdays) {
-                OfficeDayPlanner.plan(state.forecast, preferences.commuteTimes, mode, preferences.workdays)
+            // With home and office saved, each trip uses the weather where it starts.
+            val home = commute.home ?: state.forecast
+            val office = commute.office ?: state.forecast
+            val officeDay = remember(home, office, preferences.commuteTimes, mode, preferences.workdays) {
+                OfficeDayPlanner.plan(home, preferences.commuteTimes, mode, preferences.workdays, office)
             }
             if (officeDay != null) {
                 val today = state.forecast.current.time.toLocalDate()
-                OfficeDayCard(officeDay.summary, officeDay.advice, officeDay.score, mode, today, onChangeTransport)
+                OfficeDayCard(
+                    officeDay.summary,
+                    officeDay.advice,
+                    officeDay.score,
+                    mode,
+                    today,
+                    onChangeTransport,
+                    homeName = places.home?.name.takeIf { commute.home != null },
+                    officeName = places.office?.name.takeIf { commute.office != null },
+                )
                 TravelChecklistCard(officeDay.checklist, officeDay.summary.date, today)
             }
             val outlook = remember(state.forecast) { RainAnalysis.outlookForRestOfToday(state.forecast) }

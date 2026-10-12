@@ -24,25 +24,39 @@ import java.time.ZoneId
 /** A forecast saved on the device together with when it was downloaded. */
 data class CachedForecast(val forecast: WeatherForecast, val fetchedAt: Instant)
 
-/** Keeps the most recent forecast for offline use. */
+/** Keeps recent forecasts for offline use. */
 interface WeatherCache {
-    /** @return the cached forecast if it belongs to [coordinates] (compared at ~1 km precision). */
+    /** @return the cached forecast for [coordinates] (compared at ~1 km precision), if any. */
     suspend fun load(coordinates: Coordinates): CachedForecast?
 
     suspend fun save(forecast: WeatherForecast, fetchedAt: Instant)
 }
 
 /**
- * Stores the latest forecast as a small JSON file. One record is all the app needs, so a database
- * would add weight without benefit. Writes go to a temporary file that is then moved into place,
- * so a crash mid-write never leaves a half-written cache. Unreadable or outdated-format files are
- * treated as an empty cache.
+ * Stores the latest forecast for each of the last few places as small JSON files in [directory],
+ * one per ~1 km cell (current location, home, office…). A database would add weight without
+ * benefit. Writes go to a temporary file that is then moved into place, so a crash mid-write never
+ * leaves a half-written cache. Unreadable or outdated-format files are treated as missing.
+ *
+ * @param maxEntries older files beyond this many are deleted after each save.
+ * @param legacyFile the single-file cache of earlier versions, deleted on the first save.
  */
-class FileWeatherCache(private val file: File) : WeatherCache {
+class FileWeatherCache(
+    private val directory: File,
+    private val maxEntries: Int = 6,
+    private val legacyFile: File? = null,
+) : WeatherCache {
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    /** The file holding the forecast for [coordinates]'s ~1 km cell. */
+    internal fun fileFor(coordinates: Coordinates): File {
+        val cell = coordinates.approximate()
+        return File(directory, "$PREFIX${cell.latitude}_${cell.longitude}.json")
+    }
+
     override suspend fun load(coordinates: Coordinates): CachedForecast? = withContext(Dispatchers.IO) {
+        val file = fileFor(coordinates)
         if (!file.exists()) return@withContext null
         val entry = try {
             json.decodeFromString(CacheEntry.serializer(), file.readText())
@@ -60,11 +74,26 @@ class FileWeatherCache(private val file: File) : WeatherCache {
 
     override suspend fun save(forecast: WeatherForecast, fetchedAt: Instant) = withContext(Dispatchers.IO) {
         val text = json.encodeToString(CacheEntry.serializer(), CacheEntry.from(forecast, fetchedAt))
-        file.parentFile?.mkdirs()
-        val temp = File(file.parentFile, file.name + ".tmp")
+        directory.mkdirs()
+        val file = fileFor(forecast.coordinates)
+        val temp = File(directory, file.name + ".tmp")
         temp.writeText(text)
         Files.move(temp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+        prune()
+        legacyFile?.delete()
         Unit
+    }
+
+    /** Keeps only the [maxEntries] most recently saved forecasts. */
+    private fun prune() {
+        directory.listFiles { f -> f.name.startsWith(PREFIX) && f.name.endsWith(".json") }
+            ?.sortedByDescending { it.lastModified() }
+            ?.drop(maxEntries)
+            ?.forEach { it.delete() }
+    }
+
+    private companion object {
+        const val PREFIX = "forecast_"
     }
 }
 

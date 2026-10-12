@@ -1,5 +1,6 @@
 package com.ah0890.dailyweather.presentation.home
 
+import com.ah0890.dailyweather.data.local.DataStorePlacesRepository
 import com.ah0890.dailyweather.domain.model.Coordinates
 import com.ah0890.dailyweather.domain.model.LocationData
 import com.ah0890.dailyweather.domain.model.SavedLocation
@@ -10,6 +11,7 @@ import com.ah0890.dailyweather.location.LocationProvider
 import com.ah0890.dailyweather.location.LocationResult
 import com.ah0890.dailyweather.location.PlaceNameResolver
 import com.ah0890.dailyweather.testing.FakeWeatherRepository
+import com.ah0890.dailyweather.testing.InMemoryPreferencesDataStore
 import com.ah0890.dailyweather.testing.MainDispatcherRule
 import com.ah0890.dailyweather.testing.SampleForecasts
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -65,7 +67,14 @@ class HomeViewModelWeatherTest {
         weather: FakeWeatherRepository,
         saved: SavedLocation? = savedAt(paris),
         liveLocation: Coordinates = london,
-    ) = HomeViewModel(FixedLocationProvider(liveLocation), NoNames, FakeLocationRepository(saved), weather, clock)
+    ) = HomeViewModel(
+        FixedLocationProvider(liveLocation),
+        NoNames,
+        FakeLocationRepository(saved),
+        weather,
+        clock,
+        DataStorePlacesRepository(InMemoryPreferencesDataStore()),
+    )
 
     private fun success(at: Instant = clock.now) = { c: Coordinates ->
         WeatherResult.Success(SampleForecasts.forecast(c), at)

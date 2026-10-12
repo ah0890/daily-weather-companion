@@ -62,6 +62,7 @@ import com.ah0890.dailyweather.domain.usecase.DayCommute
 import com.ah0890.dailyweather.domain.usecase.WorkWeek
 import com.ah0890.dailyweather.domain.usecase.WorkWeekAnalysis
 import com.ah0890.dailyweather.presentation.components.LocalUserPreferences
+import com.ah0890.dailyweather.presentation.home.CommuteForecasts
 import com.ah0890.dailyweather.presentation.home.HomeViewModel
 import com.ah0890.dailyweather.presentation.home.WeatherUiState
 import com.ah0890.dailyweather.presentation.weather.HourlyForecastRow
@@ -87,6 +88,7 @@ private val CardPadding = 16.dp
 fun ForecastRoute(viewModel: HomeViewModel) {
     val location by viewModel.locationState.collectAsStateWithLifecycle()
     val weather by viewModel.weatherState.collectAsStateWithLifecycle()
+    val commute by viewModel.commuteState.collectAsStateWithLifecycle()
 
     LifecycleResumeEffect(viewModel) {
         viewModel.refreshWeatherIfStale()
@@ -97,6 +99,7 @@ fun ForecastRoute(viewModel: HomeViewModel) {
         locationName = location.location?.location?.name,
         weather = weather,
         onRefresh = viewModel::refreshWeather,
+        commute = commute,
     )
 }
 
@@ -106,14 +109,22 @@ fun ForecastScreen(
     weather: WeatherUiState,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
+    commute: CommuteForecasts = CommuteForecasts(),
 ) {
     // Only one day is expanded at a time; remembered across rotation.
     var expandedDate by rememberSaveable { mutableStateOf<String?>(null) }
     val preferences = LocalUserPreferences.current
     val loaded = weather as? WeatherUiState.Loaded
-    val week = remember(loaded?.forecast, preferences.commuteTimes, preferences.transportMode, preferences.workdays) {
-        loaded?.let { WorkWeekAnalysis.analyse(it.forecast, preferences.commuteTimes, preferences.transportMode, preferences.workdays) }
-            ?: WorkWeek(emptyMap(), best = null, riskiest = null)
+    val week = remember(loaded?.forecast, commute, preferences.commuteTimes, preferences.transportMode, preferences.workdays) {
+        loaded?.let {
+            WorkWeekAnalysis.analyse(
+                commute.home ?: it.forecast,
+                preferences.commuteTimes,
+                preferences.transportMode,
+                preferences.workdays,
+                commute.office ?: it.forecast,
+            )
+        } ?: WorkWeek(emptyMap(), best = null, riskiest = null)
     }
 
     PullToRefreshBox(

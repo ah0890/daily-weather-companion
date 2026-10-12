@@ -8,10 +8,12 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.ah0890.dailyweather.DailyWeatherApplication
 import com.ah0890.dailyweather.domain.model.Coordinates
 import com.ah0890.dailyweather.domain.model.LocationData
+import com.ah0890.dailyweather.domain.model.Places
 import com.ah0890.dailyweather.domain.model.SavedLocation
 import com.ah0890.dailyweather.domain.model.WeatherForecast
 import com.ah0890.dailyweather.domain.model.WeatherResult
 import com.ah0890.dailyweather.domain.repository.LocationRepository
+import com.ah0890.dailyweather.domain.repository.PlacesRepository
 import com.ah0890.dailyweather.domain.repository.WeatherRepository
 import com.ah0890.dailyweather.location.LocationProvider
 import com.ah0890.dailyweather.location.LocationResult
@@ -44,6 +46,10 @@ import java.time.LocalDateTime
  *
  * The forecast is loaded whenever the location changes, on request, and on return to the screen
  * once it is older than [WEATHER_REFRESH_AFTER]; it is never polled.
+ *
+ * Instead of the device location the user can pick a saved place; the default place is shown
+ * first. When home and office places are set, their forecasts are loaded too (cache first) so the
+ * commute uses the weather where each trip starts. No other saved place is ever requested.
  */
 class HomeViewModel(
     private val locationProvider: LocationProvider,
@@ -51,6 +57,7 @@ class HomeViewModel(
     private val locationRepository: LocationRepository,
     private val weatherRepository: WeatherRepository,
     private val clock: Clock = Clock.systemUTC(),
+    private val placesRepository: PlacesRepository,
 ) : ViewModel() {
 
     private val status = MutableStateFlow<LocationStatus>(LocationStatus.Checking)
@@ -58,14 +65,35 @@ class HomeViewModel(
     /** Location found during this session; kept in memory even if saving it fails. */
     private val liveLocation = MutableStateFlow<SavedLocation?>(null)
 
+    private val choice = MutableStateFlow<LocationChoice>(LocationChoice.Default)
+
+    val places: StateFlow<Places> = placesRepository.places
+        .stateIn(viewModelScope, SharingStarted.Eagerly, Places())
+
     val locationState: StateFlow<LocationUiState> =
-        combine(locationRepository.savedLocation, liveLocation, status) { saved, live, status ->
+        combine(locationRepository.savedLocation, liveLocation, status, places, choice) { saved, live, status, places, choice ->
+            val device = live ?: saved
+            val place = when (choice) {
+                LocationChoice.Default -> places.default
+                LocationChoice.Device -> null
+                is LocationChoice.SavedPlace -> places.find(choice.id) ?: places.default
+            }
             LocationUiState(
-                location = live ?: saved,
-                source = if (live != null) LocationSource.Current else LocationSource.Saved,
+                location = place?.let { SavedLocation(LocationData(it.coordinates, it.name), Instant.EPOCH) } ?: device,
+                source = when {
+                    place != null -> LocationSource.Place
+                    live != null -> LocationSource.Current
+                    else -> LocationSource.Saved
+                },
                 status = status,
+                place = place,
+                deviceLocation = device,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, LocationUiState())
+
+    private val commute = MutableStateFlow(CommuteForecasts())
+    val commuteState: StateFlow<CommuteForecasts> = commute.asStateFlow()
+    private var commuteJob: Job? = null
 
     private var locateJob: Job? = null
 
@@ -84,6 +112,52 @@ class HomeViewModel(
                 .filterNotNull()
                 .distinctUntilChanged()
                 .collect { loadWeather(it, useFreshCache = true) }
+        }
+        viewModelScope.launch {
+            places
+                .map { it.home?.coordinates to it.office?.coordinates }
+                .distinctUntilChanged()
+                // Until the forecast on screen has loaded, its own load does this when it finishes,
+                // so a place that is both shown and home isn't downloaded twice.
+                .collect { if (weather.value is WeatherUiState.Loaded) loadCommute(force = false) }
+        }
+    }
+
+    /** Shows a saved place instead of the device location (for this session). */
+    fun selectPlace(id: String) {
+        choice.value = LocationChoice.SavedPlace(id)
+        if (status.value != LocationStatus.Locating) status.value = LocationStatus.Idle
+    }
+
+    /** Back to the device location; the UI then reports permission through [onPermissionChecked]. */
+    fun selectDeviceLocation() {
+        choice.value = LocationChoice.Device
+        if (status.value != LocationStatus.Locating) status.value = LocationStatus.Idle
+    }
+
+    /**
+     * Loads the home and office forecasts for the commute. The forecast on screen is reused, and
+     * cached copies younger than [WEATHER_REFRESH_AFTER] are used unless [force] is set.
+     */
+    private fun loadCommute(force: Boolean) {
+        commuteJob?.cancel()
+        commuteJob = viewModelScope.launch {
+            val places = placesRepository.places.first()
+            val shown = weather.value as? WeatherUiState.Loaded
+
+            suspend fun forecastAt(coordinates: Coordinates?): WeatherForecast? {
+                val cell = coordinates?.approximate() ?: return null
+                if (shown != null && cell == weatherCoordinates) return shown.forecast
+                val cached = weatherRepository.cachedForecast(cell)
+                if (!force && cached != null && !isOld(cached.fetchedAt)) return loaded(cached.forecast, cached.fetchedAt).forecast
+                return when (val result = weatherRepository.getForecast(cell)) {
+                    is WeatherResult.Success -> loaded(result.forecast, result.fetchedAt).forecast
+                    is WeatherResult.Stale -> loaded(result.forecast, result.fetchedAt).forecast
+                    is WeatherResult.Failure -> cached?.let { loaded(it.forecast, it.fetchedAt).forecast }
+                }
+            }
+
+            commute.value = CommuteForecasts(home = forecastAt(places.home?.coordinates), office = forecastAt(places.office?.coordinates))
         }
     }
 
@@ -116,6 +190,7 @@ class HomeViewModel(
                     shown = fromCache
                     if (useFreshCache && !isOld(cached.fetchedAt)) {
                         weather.value = fromCache
+                        loadCommute(force = false)
                         return@launch
                     }
                     weather.value = fromCache.copy(isRefreshing = true)
@@ -127,6 +202,7 @@ class HomeViewModel(
                 is WeatherResult.Failure ->
                     shown?.copy(isRefreshing = false, refreshError = result.error) ?: WeatherUiState.Error(result.error)
             }
+            loadCommute(force = !useFreshCache)
         }
     }
 
@@ -144,6 +220,11 @@ class HomeViewModel(
             val known = liveLocation.value ?: locationRepository.savedLocation.first()
             val current = status.value
             if (current == LocationStatus.Locating) return@launch
+            // A saved place is on screen: the device location isn't needed, so don't look it up.
+            if (showsPlace()) {
+                if (current == LocationStatus.Checking) status.value = LocationStatus.Idle
+                return@launch
+            }
 
             if (!granted) {
                 status.value = when {
@@ -209,6 +290,15 @@ class HomeViewModel(
         }
     }
 
+    private suspend fun showsPlace(): Boolean {
+        val places = placesRepository.places.first()
+        return when (val choice = choice.value) {
+            LocationChoice.Default -> places.default != null
+            LocationChoice.Device -> false
+            is LocationChoice.SavedPlace -> (places.find(choice.id) ?: places.default) != null
+        }
+    }
+
     private fun SavedLocation.isStale(): Boolean =
         Duration.between(savedAt, clock.instant()) > STALE_AFTER
 
@@ -224,6 +314,7 @@ class HomeViewModel(
                     container.placeNameResolver,
                     container.locationRepository,
                     container.weatherRepository,
+                    placesRepository = container.placesRepository,
                 )
             }
         }

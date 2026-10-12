@@ -1,5 +1,6 @@
 package com.ah0890.dailyweather.presentation.home
 
+import com.ah0890.dailyweather.data.local.DataStorePlacesRepository
 import com.ah0890.dailyweather.domain.model.Coordinates
 import com.ah0890.dailyweather.domain.model.LocationData
 import com.ah0890.dailyweather.domain.model.SavedLocation
@@ -8,6 +9,7 @@ import com.ah0890.dailyweather.location.LocationProvider
 import com.ah0890.dailyweather.location.LocationResult
 import com.ah0890.dailyweather.location.PlaceNameResolver
 import com.ah0890.dailyweather.testing.FakeWeatherRepository
+import com.ah0890.dailyweather.testing.InMemoryPreferencesDataStore
 import com.ah0890.dailyweather.testing.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -66,7 +68,14 @@ class HomeViewModelTest {
         provider: FakeLocationProvider = FakeLocationProvider(LocationResult.Success(london)),
         repository: FakeLocationRepository = FakeLocationRepository(),
         placeName: String? = "London",
-    ) = HomeViewModel(provider, FakeResolver(placeName), repository, FakeWeatherRepository(), clock)
+    ) = HomeViewModel(
+        provider,
+        FakeResolver(placeName),
+        repository,
+        FakeWeatherRepository(),
+        clock,
+        DataStorePlacesRepository(InMemoryPreferencesDataStore()),
+    )
 
     private val HomeViewModel.state get() = locationState.value
 

@@ -1,11 +1,14 @@
 package com.ah0890.dailyweather.notifications
 
 import com.ah0890.dailyweather.domain.model.Coordinates
+import com.ah0890.dailyweather.domain.model.Place
+import com.ah0890.dailyweather.domain.model.Places
 import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.model.WeatherForecast
 import com.ah0890.dailyweather.domain.model.WeatherResult
 import com.ah0890.dailyweather.domain.repository.LocationRepository
+import com.ah0890.dailyweather.domain.repository.PlacesRepository
 import com.ah0890.dailyweather.domain.repository.PreferencesRepository
 import com.ah0890.dailyweather.domain.repository.WeatherRepository
 import kotlinx.coroutines.flow.first
@@ -79,7 +82,13 @@ interface DailySummaryNotifier {
 
 /**
  * One run of a scheduled notification job, independent of WorkManager so it can be unit-tested.
- * Uses the saved location only: the app never looks up location in the background.
+ * Uses saved locations only: the app never looks up location in the background.
+ *
+ * The morning summary is about home (or the default place, or the last device location); the
+ * evening alert about the office. With both saved, the commute uses each one's forecast. Other
+ * saved places are never requested.
+ *
+ * @param places the user's saved places, or null to use only the last device location.
  */
 class DailySummaryWork(
     private val preferences: PreferencesRepository,
@@ -88,7 +97,11 @@ class DailySummaryWork(
     private val notifier: DailySummaryNotifier,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val kind: NotificationKind = NotificationKind.MorningSummary,
+    private val places: PlacesRepository? = null,
 ) {
+    /** A location to get the weather for, named the way notifications show it. */
+    private data class Target(val coordinates: Coordinates, val name: String?)
+
     sealed interface Outcome {
         data class Notified(val summary: DailySummary) : Outcome
         data class Alerted(val alert: EveningAlert) : Outcome
@@ -136,15 +149,28 @@ class DailySummaryWork(
         val now = ZonedDateTime.now(clock)
         if (NotificationSchedule.isTooLate(now, timing.time, timing.days)) return Outcome.Skipped(SkipReason.TooLate)
 
-        val location = locations.savedLocation.first() ?: return Outcome.Skipped(SkipReason.NoLocation)
-        val forecast = loadForecast(location.location.coordinates)
+        val saved = places?.places?.first() ?: Places()
+        val device = locations.savedLocation.first()?.location?.let { Target(it.coordinates, it.name) }
+        val home = (saved.home ?: saved.default)?.toTarget() ?: device
+        val office = saved.office?.toTarget()
+        // Morning: about home, with the office for the evening trip. Evening: about the office.
+        val main = (if (kind == NotificationKind.MorningSummary) home ?: office else office ?: home)
+            ?: return Outcome.Skipped(SkipReason.NoLocation)
+
+        val forecast = loadForecast(main.coordinates)
             ?: return if (attempt + 1 < MAX_ATTEMPTS) Outcome.Retry else Outcome.Skipped(SkipReason.NoData)
+        val officeForecast = office
+            ?.takeIf { kind == NotificationKind.MorningSummary && it.coordinates.approximate() != main.coordinates.approximate() }
+            ?.let { loadForecast(it.coordinates) }
+            ?: forecast
 
         val localNow = LocalDateTime.ofInstant(clock.instant(), forecast.timeZone)
-        val name = location.location.name
+        val name = main.name
         return when (kind) {
             NotificationKind.MorningSummary -> {
-                val summary = DailySummary.from(forecast, name, localNow, prefs.commuteTimes, prefs.transportMode, prefs.workdays)
+                val summary = DailySummary.from(
+                    forecast, name, localNow, prefs.commuteTimes, prefs.transportMode, prefs.workdays, officeForecast,
+                )
                 notifier.show(summary, prefs.temperatureUnit)
                 Outcome.Notified(summary)
             }
@@ -161,6 +187,9 @@ class DailySummaryWork(
             }
         }
     }
+
+    /** The town name reads better in a notification than "Home"; the label is the fallback. */
+    private fun Place.toTarget() = Target(coordinates, placeName ?: name)
 
     private suspend fun loadForecast(coordinates: Coordinates): WeatherForecast? =
         when (val result = weather.getForecast(coordinates)) {

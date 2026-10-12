@@ -25,28 +25,31 @@ class OpenMeteoDataSource(private val api: OpenMeteoApi) : WeatherRemoteDataSour
     }
 
     companion object {
-        private val json = Json {
-            ignoreUnknownKeys = true
-            explicitNulls = false
-        }
-
-        /** Builds a data source with sensible timeouts. No logging interceptor is installed so
-         *  that request URLs, which contain coordinates, never end up in logcat. */
-        fun create(baseUrl: String = OpenMeteoApi.BASE_URL): OpenMeteoDataSource {
-            val client = OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(15, TimeUnit.SECONDS)
-                .callTimeout(30, TimeUnit.SECONDS)
-                .build()
-
-            val api = Retrofit.Builder()
-                .baseUrl(baseUrl)
-                .client(client)
-                .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
-                .build()
-                .create(OpenMeteoApi::class.java)
-
-            return OpenMeteoDataSource(api)
-        }
+        /** Builds a data source with sensible timeouts; see [openMeteoRetrofit]. */
+        fun create(baseUrl: String = OpenMeteoApi.BASE_URL): OpenMeteoDataSource =
+            OpenMeteoDataSource(openMeteoRetrofit(baseUrl).create(OpenMeteoApi::class.java))
     }
+}
+
+private val json = Json {
+    ignoreUnknownKeys = true
+    explicitNulls = false
+}
+
+/**
+ * Retrofit for an Open-Meteo API with sensible timeouts. No logging interceptor is installed so
+ * that request URLs, which contain coordinates or search terms, never end up in logcat.
+ */
+internal fun openMeteoRetrofit(baseUrl: String): Retrofit {
+    val client = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .callTimeout(30, TimeUnit.SECONDS)
+        .build()
+
+    return Retrofit.Builder()
+        .baseUrl(baseUrl)
+        .client(client)
+        .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+        .build()
 }

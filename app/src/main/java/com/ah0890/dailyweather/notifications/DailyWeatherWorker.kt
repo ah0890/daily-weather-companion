@@ -23,6 +23,7 @@ class DailyWeatherWorker(context: Context, params: WorkerParameters) : Coroutine
             weather = container.weatherRepository,
             notifier = container.dailySummaryNotifier,
             kind = kind,
+            places = container.placesRepository,
         )
 
         val outcome = work.run(attempt = runAttemptCount)

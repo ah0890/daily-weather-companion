@@ -1,7 +1,10 @@
 package com.ah0890.dailyweather.notifications
 
+import com.ah0890.dailyweather.data.local.DataStorePlacesRepository
 import com.ah0890.dailyweather.data.local.DataStorePreferencesRepository
+import com.ah0890.dailyweather.domain.model.Coordinates
 import com.ah0890.dailyweather.domain.model.LocationData
+import com.ah0890.dailyweather.domain.model.PlaceType
 import com.ah0890.dailyweather.domain.model.SavedLocation
 import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.TransportMode
@@ -117,5 +120,45 @@ class EveningCommuteWorkTest {
         preferences.setEveningAlertTime(LocalTime.of(16, 0))
 
         assertEquals(Outcome.Skipped(SkipReason.NoCommute), work(rain = mapOf(17 to 90), hour = 18, minute = 20).run(attempt = 0))
+    }
+
+    @Test
+    fun `with a saved office the alert is about the office`() = runTest {
+        val places = DataStorePlacesRepository(InMemoryPreferencesDataStore())
+        val paris = Coordinates(48.86, 2.35)
+        places.add("Office", PlaceType.Office, paris, "Paris")
+        val clock = clockAt(monday, 15, 34)
+        val weather = FakeWeatherRepository { c ->
+            val rainy = if (c == paris) mapOf(17 to 80) else emptyMap()
+            WeatherResult.Success(forecast(monday, monday.atTime(15, 34), rainy).copy(coordinates = c), clock.instant())
+        }
+        val work = DailySummaryWork(preferences, FakeLocations(office), weather, notifier, clock, NotificationKind.EveningCommute, places)
+
+        val alert = (work.run(attempt = 0) as Outcome.Alerted).alert
+
+        assertEquals("Paris", alert.locationName)
+        assertEquals(80, alert.rainChance)
+        assertEquals(listOf(paris), weather.requests)
+    }
+
+    @Test
+    fun `the morning summary uses home and the office forecast for the trip back`() = runTest {
+        val places = DataStorePlacesRepository(InMemoryPreferencesDataStore())
+        val paris = Coordinates(48.86, 2.35)
+        val berlin = Coordinates(52.52, 13.4)
+        places.add("Home", PlaceType.Home, paris, "Paris")
+        places.add("Office", PlaceType.Office, berlin, "Berlin")
+        val clock = clockAt(monday, 7, 3)
+        val weather = FakeWeatherRepository { c ->
+            val rainy = if (c == berlin) mapOf(17 to 80) else emptyMap()
+            WeatherResult.Success(forecast(monday, monday.atTime(7, 3), rainy).copy(coordinates = c), clock.instant())
+        }
+        val work = DailySummaryWork(preferences, FakeLocations(office), weather, notifier, clock, NotificationKind.MorningSummary, places)
+
+        val summary = (work.run(attempt = 0) as Outcome.Notified).summary
+
+        assertEquals("Paris", summary.locationName)
+        assertEquals(listOf(5, 80), summary.commute.map { it.leg.rainChance })
+        assertEquals(listOf(paris, berlin), weather.requests)
     }
 }

@@ -17,8 +17,6 @@
     <string name="office_day_change_transport">Change</string>
     <string name="office_day_morning">Morning commute</string>
     <string name="office_day_evening">Evening commute</string>
-    <string name="office_day_route_morning">Home → Office</string>
-    <string name="office_day_route_evening">Office → Home</string>
     <!-- e.g. "Home → Office · 8:00 AM" -->
     <string name="office_day_route_time">%1$s · %2$s</string>
     <!-- e.g. "Rain 12%" -->

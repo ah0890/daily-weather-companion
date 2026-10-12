@@ -2,7 +2,7 @@
 
 A calm, location-aware Android weather app built around one question: **what does today's weather mean for my workday?**
 
-> **Version 1.0.1**, being extended into a personal weather and office-commute assistant. Covered by 272 unit tests. Built for personal daily use.
+> **Version 1.0.1**, being extended into a personal weather and office-commute assistant. Covered by 306 unit tests. Built for personal daily use.
 
 ## Overview
 
@@ -33,6 +33,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | Offline cache of the last forecast with "last updated" notice | ✅ Done |
 | Morning summary and evening commute alert with per-day schedules (WorkManager) | ✅ Done |
 | Office days; 7-day commute indicators with best and highest-risk commute day | ✅ Done |
+| Multiple saved places (Home, Office, Parents, Other) with commute home/office and a default place | ✅ Done |
 | Settings: location, office days, commute times, transport, notification days, °C/°F, System/Light/Dark theme, privacy, about | ✅ Done |
 
 ## Screenshots
@@ -138,6 +139,8 @@ The **Office day** card looks at the departure hour and the hour after it for th
 The **Office Weather Score** starts at 100 and subtracts 0.3 points per percent of rain chance on each trip and fixed penalties for hazards (full on a trip, half between trips). 75+ is *Good*, 45–74 *Moderate*, below 45 *Poor*. It summarises the forecast and is not a safety rating.
 
 **Office days** (default Monday–Friday) decide which day the card shows: on a day off, or after the evening trip, it shows the next office day ("Office day · Monday"). On the **7 days** screen every office day gets a small indicator (🟢 Good commute, 🟡 Carry an umbrella / Take care, 🔴 High rain risk / Difficult commute), and a *Plan your week* card names the best and highest-risk commute days when they differ, with a reminder that later days are less certain.
+
+**Saved places.** In Settings you can add up to 10 places, by searching for a town (Open-Meteo's free geocoding API) or with a one-shot "use my current location", give each a name and type, edit or delete it, and mark one as **commute home**, one as **commute office** and one as **shown first**. The Today header becomes a location picker (current location or any saved place). With home and office saved, the morning trip uses the forecast at home and the evening trip and working day the forecast at the office; the route shows your own names ("Home → Office"). Only the place on screen, home and office are ever requested; the offline cache keeps a forecast for each of the last 6 places.
 
 **Today's travel checklist** lists only what is relevant: umbrella or rain gear, "consider the car for the return trip" (motorcycle), jacket (feels like ≤ 15 °C, 3 °C colder when riding), water (feels like ≥ 32 °C), sunglasses (bright daytime trip) and sun protection (UV ≥ 6).
 
@@ -284,7 +287,7 @@ Create a keystore once with `keytool -genkeypair -v -keystore release.jks -keyal
 ## Testing
 
 ```bash
-./gradlew testDebugUnitTest    # JVM unit tests (272)
+./gradlew testDebugUnitTest    # JVM unit tests (306)
 ./gradlew lintDebug            # Android Lint
 ```
 
@@ -293,6 +296,7 @@ The unit tests cover, among other things:
 - **Parsing and validation** of Open-Meteo responses, including malformed, partial and out-of-range data, and the real HTTP stack against a local mock server (timeouts, 429, 5xx, invalid JSON, unreachable server).
 - **Rain and umbrella rules** at 0 / 20 / 50 / 80 / 100 %, threshold boundaries, period merging and the rest-of-day window.
 - **Commute, hazard thresholds, transport-specific advice, office score and checklist**, **offline cache** (corrupt files, format versions, location mismatch) and **stale-forecast handling**.
+- **Saved places**: add, edit, delete, roles and default, persistence, corrupt data, place search against a mock server, and which forecasts are loaded.
 - **Location and settings persistence**, permission and location state handling in the ViewModels.
 - **Notification scheduling**: weekdays, weekends and custom days, no days, custom times, daylight-saving and time-zone changes, late runs and retries; morning and evening notification content; workday selection and the 7-day commute ratings.
 
@@ -314,7 +318,7 @@ Things that need a real device or emulator:
 
 ## Future Improvements
 
-The architecture (repository interfaces, provider-independent domain models, pure use cases) is meant to make these straightforward: multiple saved locations, a home-screen widget, severe-weather alerts, air quality, pollen, UV alerts, custom notification schedules and Wear OS support.
+The architecture (repository interfaces, provider-independent domain models, pure use cases) is meant to make these straightforward: a home-screen widget, severe-weather alerts, air quality, pollen, UV alerts, custom notification schedules and Wear OS support.
 
 ## License
 

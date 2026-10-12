@@ -27,3 +27,12 @@ sealed interface WeatherUiState {
     /** Loading failed and there is no earlier forecast to fall back on. */
     data class Error(val error: WeatherError) : WeatherUiState
 }
+
+/**
+ * Forecasts for the commute when home and office are saved places: the morning trip uses
+ * [home], the evening trip and working day [office]. Null means "use the forecast on screen".
+ */
+data class CommuteForecasts(
+    val home: WeatherForecast? = null,
+    val office: WeatherForecast? = null,
+)

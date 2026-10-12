@@ -1,25 +1,43 @@
 package com.ah0890.dailyweather.presentation.home
 
+import com.ah0890.dailyweather.domain.model.Place
 import com.ah0890.dailyweather.domain.model.SavedLocation
 
 /**
  * Location shown on the Today screen and what the app is currently doing about it.
  *
  * @property location the location weather is shown for, or null if none is known yet.
- * @property source whether [location] was found during this session or loaded from storage.
+ * @property source where [location] comes from.
+ * @property place the saved place being shown, when [source] is [LocationSource.Place].
+ * @property deviceLocation the device's own location (found now or saved earlier), whatever is shown.
  */
 data class LocationUiState(
     val location: SavedLocation? = null,
     val source: LocationSource = LocationSource.Saved,
     val status: LocationStatus = LocationStatus.Checking,
+    val place: Place? = null,
+    val deviceLocation: SavedLocation? = location.takeIf { place == null },
 )
 
 enum class LocationSource {
-    /** Loaded from storage; may be from an earlier day. */
+    /** The device location loaded from storage; may be from an earlier day. */
     Saved,
 
     /** Found from the device's location during this session. */
     Current,
+
+    /** One of the user's saved places, e.g. "Office". */
+    Place,
+}
+
+/** Which location the user wants to see on the Today screen. */
+sealed interface LocationChoice {
+    /** The default saved place if there is one, otherwise the device location. */
+    data object Default : LocationChoice
+
+    data object Device : LocationChoice
+
+    data class SavedPlace(val id: String) : LocationChoice
 }
 
 sealed interface LocationStatus {
