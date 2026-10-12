@@ -1,11 +1,15 @@
 package com.ah0890.dailyweather.domain.usecase
 
+import com.ah0890.dailyweather.domain.model.ChecklistItem
 import com.ah0890.dailyweather.domain.model.CommuteAdvice
 import com.ah0890.dailyweather.domain.model.CommuteLegType
 import com.ah0890.dailyweather.domain.model.CommuteRain
 import com.ah0890.dailyweather.domain.model.CommuteTimes
+import com.ah0890.dailyweather.domain.model.TransportMode
+import com.ah0890.dailyweather.domain.model.TravelRating
 import com.ah0890.dailyweather.domain.model.WeatherCondition
 import com.ah0890.dailyweather.domain.model.WeatherForecast
+import com.ah0890.dailyweather.domain.model.WeatherHazard
 import com.ah0890.dailyweather.testing.SampleForecasts
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -132,5 +136,53 @@ class CommuteAnalysisTest {
         val short = forecast(now = day.atTime(6, 0)).let { it.copy(hourly = it.hourly.take(7)) } // until 06:00
 
         assertNull(CommuteAnalysis.summary(short, times))
+    }
+
+    @Test
+    fun `legs carry gusts, lowest visibility, rain peak and hazards`() {
+        val base = forecast(now = day.atTime(6, 0), rain = mapOf(18 to 70))
+        val detailed = base.copy(
+            hourly = base.hourly.map {
+                when (it.time.hour) {
+                    17 -> it.copy(windGustsKmh = 45.0, visibilityMeters = 4_000.0)
+                    18 -> it.copy(windGustsKmh = 65.0, visibilityMeters = 800.0)
+                    else -> it
+                }
+            },
+        )
+        val evening = CommuteAnalysis.summary(detailed, times)!!.legs.single { it.type == CommuteLegType.Evening }
+
+        assertEquals(65.0, evening.windGustsKmh!!, 0.0)
+        assertEquals(800.0, evening.visibilityMeters!!, 0.0)
+        assertEquals(day.atTime(18, 0), evening.rainPeakTime)
+        assertEquals(
+            setOf(WeatherHazard.RainLikely, WeatherHazard.StrongWind, WeatherHazard.PoorVisibility),
+            evening.hazards,
+        )
+    }
+
+    @Test
+    fun `workday hours run from the first remaining trip to the end of the last`() {
+        val early = forecast(now = day.atTime(6, 0))
+        val summary = CommuteAnalysis.summary(early, times)!!
+        val hours = CommuteAnalysis.workdayHours(early, summary)
+
+        assertEquals(day.atTime(8, 0), hours.first().time)
+        assertEquals(day.atTime(18, 0), hours.last().time)
+
+        val afternoon = forecast(now = day.atTime(13, 30))
+        val later = CommuteAnalysis.workdayHours(afternoon, CommuteAnalysis.summary(afternoon, times)!!)
+        assertEquals(day.atTime(13, 0), later.first().time)
+    }
+
+    @Test
+    fun `office day planner combines advice, score and checklist`() {
+        val plan = OfficeDayPlanner.plan(forecast(now = day.atTime(6, 0), rain = mapOf(17 to 80)), times, TransportMode.Motorcycle)!!
+
+        assertEquals(2, plan.advice.size)
+        assertEquals(TravelRating.Favorable, plan.advice[0].rating)
+        assertEquals(TravelRating.Unfavorable, plan.advice[1].rating)
+        assertTrue(plan.score.value < 100)
+        assertEquals(ChecklistItem.AlternativeTransport, plan.checklist.first().item)
     }
 }

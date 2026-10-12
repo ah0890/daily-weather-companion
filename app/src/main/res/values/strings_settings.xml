@@ -12,7 +12,7 @@
 
     <string name="settings_commute_morning">Morning departure</string>
     <string name="settings_commute_evening">Evening departure</string>
-    <string name="settings_commute_hint">Used for the \"Plan your day\" card on the Today screen.</string>
+    <string name="settings_commute_hint">Used for the Office day card and commute advice on the Today screen.</string>
     <string name="settings_time_picker_ok">OK</string>
     <string name="settings_time_picker_cancel">Cancel</string>
 

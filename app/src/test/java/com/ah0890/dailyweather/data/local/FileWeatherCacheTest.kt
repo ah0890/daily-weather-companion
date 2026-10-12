@@ -34,6 +34,16 @@ class FileWeatherCacheTest {
     }
 
     @Test
+    fun `gusts, visibility and uv per hour are kept`() = runTest {
+        val detailed = forecast.copy(
+            hourly = forecast.hourly.map { it.copy(windGustsKmh = 48.0, visibilityMeters = 900.0, uvIndex = 6.5) },
+        )
+        FileWeatherCache(file).save(detailed, fetchedAt)
+
+        assertEquals(detailed, FileWeatherCache(file).load(SampleForecasts.london)!!.forecast)
+    }
+
+    @Test
     fun `saving again replaces the previous forecast`() = runTest {
         val cache = FileWeatherCache(file)
         cache.save(forecast, fetchedAt)

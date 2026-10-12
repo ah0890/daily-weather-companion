@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.ah0890.dailyweather.domain.model.CommuteTimes
 import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.ThemeMode
+import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.testing.InMemoryPreferencesDataStore
 import kotlinx.coroutines.flow.first
@@ -31,12 +32,14 @@ class DataStorePreferencesRepositoryTest {
         repository.setThemeMode(ThemeMode.Dark)
         repository.setMorningCommute(LocalTime.of(7, 15))
         repository.setEveningCommute(LocalTime.of(18, 45))
+        repository.setTransportMode(TransportMode.Motorcycle)
 
         assertEquals(
             UserPreferences(
                 temperatureUnit = TemperatureUnit.Fahrenheit,
                 themeMode = ThemeMode.Dark,
                 commuteTimes = CommuteTimes(LocalTime.of(7, 15), LocalTime.of(18, 45)),
+                transportMode = TransportMode.Motorcycle,
             ),
             repository.preferences.first(),
         )
@@ -48,6 +51,7 @@ class DataStorePreferencesRepositoryTest {
         store.edit {
             it[stringPreferencesKey("temperature_unit")] = "Kelvin"
             it[stringPreferencesKey("theme_mode")] = ""
+            it[stringPreferencesKey("transport_mode")] = "Hovercraft"
             it[intPreferencesKey("commute_morning_minutes")] = -5
             it[intPreferencesKey("commute_evening_minutes")] = 24 * 60
         }

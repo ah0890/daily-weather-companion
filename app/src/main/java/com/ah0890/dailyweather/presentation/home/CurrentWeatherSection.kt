@@ -38,8 +38,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.CommuteTimes
+import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.WeatherForecast
-import com.ah0890.dailyweather.domain.usecase.CommuteAnalysis
+import com.ah0890.dailyweather.domain.usecase.OfficeDayPlanner
 import com.ah0890.dailyweather.domain.usecase.RainAnalysis
 import com.ah0890.dailyweather.presentation.components.LocalUserPreferences
 import com.ah0890.dailyweather.presentation.components.RelativeAge
@@ -74,8 +75,9 @@ fun CurrentWeatherSection(
     state: WeatherUiState,
     edgePadding: Dp,
     onRetry: () -> Unit,
+    onChangeTransport: () -> Unit = {},
 ) {
-    val commuteTimes = LocalUserPreferences.current.commuteTimes
+    val preferences = LocalUserPreferences.current
     // Fade between loading, error and loaded; refreshes within "loaded" update in place.
     AnimatedContent(
         targetState = state,
@@ -88,13 +90,20 @@ fun CurrentWeatherSection(
         label = "weather",
     ) { shown ->
         Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-            WeatherContent(shown, edgePadding, onRetry, commuteTimes)
+            WeatherContent(shown, edgePadding, onRetry, preferences.commuteTimes, preferences.transportMode, onChangeTransport)
         }
     }
 }
 
 @Composable
-private fun WeatherContent(state: WeatherUiState, edgePadding: Dp, onRetry: () -> Unit, commuteTimes: CommuteTimes) {
+private fun WeatherContent(
+    state: WeatherUiState,
+    edgePadding: Dp,
+    onRetry: () -> Unit,
+    commuteTimes: CommuteTimes,
+    mode: TransportMode,
+    onChangeTransport: () -> Unit,
+) {
     when (state) {
         WeatherUiState.Idle -> Unit
         WeatherUiState.Loading -> LoadingCard()
@@ -102,10 +111,13 @@ private fun WeatherContent(state: WeatherUiState, edgePadding: Dp, onRetry: () -
         is WeatherUiState.Loaded -> {
             CurrentWeatherCard(state.forecast, state.fetchedAt)
             StaleForecastNotice(state.fetchedAt, state.refreshError)
+            val officeDay = remember(state.forecast, commuteTimes, mode) { OfficeDayPlanner.plan(state.forecast, commuteTimes, mode) }
+            if (officeDay != null) {
+                OfficeDayCard(officeDay.summary, officeDay.advice, officeDay.score, mode, onChangeTransport)
+                TravelChecklistCard(officeDay.checklist, officeDay.summary.isToday)
+            }
             val outlook = remember(state.forecast) { RainAnalysis.outlookForRestOfToday(state.forecast) }
             TodayOutlookCard(outlook, now = state.forecast.current.time)
-            val commute = remember(state.forecast, commuteTimes) { CommuteAnalysis.summary(state.forecast, commuteTimes) }
-            if (commute != null) CommuteCard(commute)
             HourlyForecastRow(
                 hours = state.forecast.upcomingHours(),
                 title = stringResource(R.string.hourly_title),

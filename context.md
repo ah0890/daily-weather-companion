@@ -1,7 +1,7 @@
 # Project Context — Daily Weather Companion
 
 Hand-over notes for continuing development in a new session. **Read this first**; open source files only when needed.
-Last updated: 2026-10-11 — **v1.0.1 released** (signed APK built); all planned milestones are done.
+Last updated: 2026-10-12 — v1.0.1 released; **"office commute assistant" upgrade in progress** (see section 8).
 
 > **Starting a new chat:** say *"Read context.md, then …"* followed by what you want (a new feature, a bug fix, a new APK).
 > The assistant should check `git status` / `git log -3` first and follow the working rules in section 2.
@@ -74,20 +74,22 @@ Manual DI: `DailyWeatherApplication.container` (`AppContainer`, lazy singletons)
 | `MainActivity.kt` | Collects preferences → `LocalUserPreferences`; resolves theme (System/Light/Dark) and status-bar style |
 | `AppContainer.kt` | Location provider/resolver, `WeatherRepository` (Open-Meteo + file cache), `LocationRepository` (DataStore `saved_location`), `PreferencesRepository` (DataStore `user_preferences`), `NotificationScheduler`, `DailySummaryNotifier` |
 | `domain/model/` | `WeatherForecast` (+`today`, `upcomingHours()`, `hoursOn()`, `advancedTo(now)`), `CurrentWeather`, `HourlyForecast`, `DailyForecast` (metric, location-local times), `WeatherCondition`, `Coordinates` (`approximate()` = 2 decimals), `LocationData`, `SavedLocation`, `WeatherResult` (Success/Stale/Failure + `WeatherError`), `RainInformation`, `WeatherRecommendation`/`UmbrellaAdvice`/`TodayOutlook`, `Commute*`, `UserPreferences` |
+| `domain/model/Travel.kt` | `TransportMode`, `WeatherHazard` (most serious first), `Impact`, `TravelRating`, `TravelTip`, `LegAdvice`, `OfficeWeatherScore`/`ScoreBand`, `ChecklistEntry`, `OfficeDay` |
+| `domain/usecase/` (office) | `HazardAnalysis` (thresholds: rain, heavy rain, thunder, wintry, wind + gusts, visibility, heat, UV), `TravelAdvisor` (hazard × transport impact table → rating + tips), `OfficeScore` (100 − rain×0.3 − hazard penalties; ≥75 Good, ≥45 Moderate), `TravelChecklist`, `OfficeDayPlanner` (builds `OfficeDay`), `CommuteAnalysis.workdayHours` |
 | `domain/usecase/` | `RainAnalysis` (≥40% likely; periods merge across 1 dry hour; ≥60% or raining → umbrella Recommended, ≥30% or ≥1 mm → Consider; rest of today, ≥6 h; `summary()` → `RainSummary`), `CommuteAnalysis` (departure hour + next; windy ≥39 km/h; after evening trip → tomorrow) |
 | `data/remote/openmeteo/` | `OpenMeteoApi` (one `v1/forecast` call incl. hourly `apparent_temperature`), nullable DTOs, `OpenMeteoMapper` (validates, skips bad rows, WMO → condition), `OpenMeteoDataSource.create()` (timeouts, no logging) |
 | `data/repository/DefaultWeatherRepository.kt` | Caches each success; failure → `Stale(cached, error)` or `Failure`; `cachedForecast()`; exception → `WeatherError` |
 | `data/local/` | `FileWeatherCache` (versioned JSON, atomic move, ~1 km match), `DataStoreLocationRepository`, `DataStorePreferencesRepository` (units, theme, commute times, notification on/time, prompt dismissed) |
 | `location/` | `AndroidLocationProvider` (one fix: fused/network 10 s → GPS 20 s on 12+ → last-known ≤3 h; invalid coords → unavailable), `GeocoderPlaceNameResolver` |
 | `notifications/` | `NotificationSchedule` (pure, DST-safe `nextRun`, `isTooLate` > 3 h), `DailySummary`, `DailySummaryWork` (testable; never throws; retry ×3, stale ≤6 h), `DailyWeatherWorker` (re-queues next run with APPEND_OR_REPLACE, never fails), `WorkManagerNotificationScheduler` (unique work `daily_weather_summary`; KEEP on app start, REPLACE on settings change), `AndroidDailySummaryNotifier` (channel `daily_summary`) |
-| `presentation/home/` | `HomeRoute`/`HomeScreen` (pull-to-refresh), `HomeViewModel` (location + weather), `LocationUiState`, `WeatherUiState`, `CurrentWeatherSection` (crossfade: hero → stale notice → `TodayOutlookCard` → `CommuteCard` → hourly → details), `NotificationPromptCard` |
+| `presentation/home/` | `HomeRoute`/`HomeScreen` (pull-to-refresh), `HomeViewModel` (location + weather), `LocationUiState`, `WeatherUiState`, `CurrentWeatherSection` (crossfade: hero → stale notice → `OfficeDayCard` → `TravelChecklistCard` → `TodayOutlookCard` → hourly → details), `NotificationPromptCard` |
 | `presentation/forecast/` | 7-day `DayCard`s with range bars, expandable details + that day's hourly row; `DayLabel`, `TemperatureSpan` |
 | `presentation/settings/` | Settings (location, morning summary switch/time, commute times, °C/°F, theme, privacy, Open-Meteo link, version), `SettingsViewModel`, `PrivacyScreen` |
-| `presentation/weather/` | Shared: `ConditionUi` (mood/emoji/label; night icons never show a sun), `WeatherFormatting` (use `temperatureText()` in UI for the user's unit), `HourlyForecastRow`, `WeatherErrorCard`, `StaleForecastNotice` |
+| `presentation/weather/` | Shared: `TravelUi` (emoji/labels for transport, hazards, tips, score, checklist; plain res ids so notifications/widget can reuse), `ConditionUi` (mood/emoji/label; night icons never show a sun), `WeatherFormatting` (use `temperatureText()` in UI for the user's unit), `HourlyForecastRow`, `WeatherErrorCard`, `StaleForecastNotice` |
 | `presentation/components/` | `RelativeAge`, `LocalUserPreferences`, `SystemIntents` (permissions, settings/URL intents, notification helpers) |
 | `ui/theme/` | Colours, typography, shapes, `WeatherBackdrop`, `LocalDarkTheme`, `ColorScheme.cardContainer` |
 
-Tests (`app/src/test/...`): **192 tests**, all passing; lint clean. Helpers in `testing/`: `SampleForecasts`, `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVMs). Create ViewModels *after* `MainDispatcherRule` is active (use `by lazy` for fields).
+Tests (`app/src/test/...`): **236 tests**, all passing; lint clean. Helpers in `testing/`: `SampleForecasts` (+`hour()` builder), `FakeWeatherRepository`, `MainDispatcherRule`, `InMemoryPreferencesDataStore` (file DataStore can't overwrite on Windows JVMs). Create ViewModels *after* `MainDispatcherRule` is active (use `by lazy` for fields).
 
 ## 7. Key behaviour & decisions
 
@@ -102,6 +104,11 @@ Tests (`app/src/test/...`): **192 tests**, all passing; lint clean. Helpers in `
 Milestones (commit): foundation `1e590c7` · README `878384a` · domain + API `cab5bb3` · repository `11db3c0` · location permission `ca2215a` · saved location `5807709` · context notes `c2611b1` · current weather `a7eeeb5` · hourly `1fa4209` · 7-day `ab4f55d` · rain/umbrella `40fff9c` · commute `c61de46` · offline cache `600339d` · settings `cca313c` · notification `34839dd` · accessibility `a3ed22c`, `0e3a14e` · hardening `861b02f` · release prep `81249ec` · final README `2216528` · night icons `3bc276d` · 1.0.1 (header fix, version bump, this file).
 
 Verified on the emulator (2026-10-11): Today, 7-day + expanded day, notification prompt → permission, scheduled job (+9 h to 07:00), forced morning run posted the notification and queued the next day, signed release build runs (location, download, navigation).
+**Upgrade to "Personal Weather & Office Commute Assistant"** (started 2026-10-12; one commit per milestone, each pushed):
+1. Office commute experience: Office day card, transport mode, hazards, score, checklist; hourly gusts/visibility/UV added to the API call and cache.
+2. (next) Workday schedule + configurable notification days (morning summary + evening commute notification), 7-day workday indicators.
+3. Multiple saved locations (Home/Office/…) · 4. Severe-weather alerts, rain soon, fog/heat · 5. Air quality · 6. Pollen · 7. UV alerts · 8. Widget · 9. Wear OS · 10. Polish.
+
 Not yet verified on a device: offline/airplane mode, °F and Dark theme switching, reboot persistence, Privacy page in the release build.
 
 ## 9. Ideas / open items

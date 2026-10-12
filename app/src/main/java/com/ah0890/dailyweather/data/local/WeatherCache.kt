@@ -99,7 +99,10 @@ private data class CacheEntry(
     }
 
     companion object {
-        /** Bump when the format changes; older files are then ignored. */
+        /**
+         * Bump when the format changes incompatibly; older files are then ignored. New optional
+         * fields with defaults don't need a bump: older files simply read them as unknown.
+         */
         const val VERSION = 1
 
         fun from(forecast: WeatherForecast, fetchedAt: Instant) = CacheEntry(
@@ -161,6 +164,9 @@ private data class HourlyEntry(
     val windSpeedKmh: Double? = null,
     val isDay: Boolean,
     val feelsLikeC: Double? = null,
+    val windGustsKmh: Double? = null,
+    val visibilityMeters: Double? = null,
+    val uvIndex: Double? = null,
 ) {
     fun toDomain() = HourlyForecast(
         time = LocalDateTime.parse(time),
@@ -171,12 +177,15 @@ private data class HourlyEntry(
         windSpeedKmh = windSpeedKmh,
         isDay = isDay,
         feelsLikeC = feelsLikeC,
+        windGustsKmh = windGustsKmh,
+        visibilityMeters = visibilityMeters,
+        uvIndex = uvIndex,
     )
 
     companion object {
         fun from(h: HourlyForecast) = HourlyEntry(
             h.time.toString(), h.condition.name, h.temperatureC, h.precipitationProbability, h.precipitationMm,
-            h.windSpeedKmh, h.isDay, h.feelsLikeC,
+            h.windSpeedKmh, h.isDay, h.feelsLikeC, h.windGustsKmh, h.visibilityMeters, h.uvIndex,
         )
     }
 }

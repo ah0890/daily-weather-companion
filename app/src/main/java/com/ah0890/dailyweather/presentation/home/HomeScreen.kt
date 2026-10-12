@@ -74,6 +74,7 @@ private val ScreenPadding = 20.dp
 @Composable
 fun HomeRoute(
     viewModel: HomeViewModel,
+    onOpenSettings: () -> Unit = {},
     settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
     val state by viewModel.locationState.collectAsStateWithLifecycle()
@@ -128,6 +129,7 @@ fun HomeRoute(
             refreshWeather = viewModel::refreshWeather,
             allowNotifications = { notificationLauncher.requestNotificationPermission() },
             dismissNotificationPrompt = settingsViewModel::dismissNotificationPrompt,
+            openSettings = onOpenSettings,
         ),
         notificationPromptTime = preferences.dailyNotificationTime.takeIf { showNotificationPrompt },
     )
@@ -142,6 +144,7 @@ class HomeActions(
     val refreshWeather: () -> Unit = {},
     val allowNotifications: () -> Unit = {},
     val dismissNotificationPrompt: () -> Unit = {},
+    val openSettings: () -> Unit = {},
 )
 
 @Composable
@@ -179,7 +182,12 @@ fun HomeScreen(
             val location = state.location
             if (location != null) {
                 SavedLocationNotice(state.status, actions)
-                CurrentWeatherSection(weather, edgePadding = ScreenPadding, onRetry = actions.refreshWeather)
+                CurrentWeatherSection(
+                    weather,
+                    edgePadding = ScreenPadding,
+                    onRetry = actions.refreshWeather,
+                    onChangeTransport = actions.openSettings,
+                )
                 if (notificationPromptTime != null) {
                     NotificationPromptCard(
                         time = notificationPromptTime,

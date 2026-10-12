@@ -57,7 +57,9 @@ fun DailyWeatherApp() {
             startDestination = TodayRoute,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable<TodayRoute> { HomeRoute(weatherViewModel) }
+            composable<TodayRoute> {
+                HomeRoute(weatherViewModel, onOpenSettings = { navController.navigateToTab(SettingsRoute) })
+            }
             composable<ForecastRoute> { ForecastRoute(weatherViewModel) }
             composable<SettingsRoute> {
                 SettingsRoute(

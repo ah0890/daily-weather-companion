@@ -34,7 +34,7 @@ data class WeatherForecast(
      * This forecast as seen at [now] (location-local time). When [current] is more than an hour old
      * — e.g. a cached forecast opened the next day — current conditions are taken from the hourly
      * forecast for [now]'s hour, so "now", today's outlook and the commute move forward in time.
-     * Readings the hourly forecast doesn't provide (humidity, UV, visibility…) become unknown.
+     * Readings the hourly forecast doesn't provide (humidity, wind direction) become unknown.
      */
     fun advancedTo(now: LocalDateTime): WeatherForecast {
         if (now.isBefore(current.time.plusHours(1))) return this
@@ -50,8 +50,8 @@ data class WeatherForecast(
                 windDirectionDegrees = null,
                 precipitationMm = hour.precipitationMm,
                 isDay = hour.isDay,
-                uvIndex = null,
-                visibilityMeters = null,
+                uvIndex = hour.uvIndex,
+                visibilityMeters = hour.visibilityMeters,
             ),
         )
     }
@@ -81,6 +81,9 @@ data class HourlyForecast(
     val windSpeedKmh: Double?,
     val isDay: Boolean,
     val feelsLikeC: Double? = null,
+    val windGustsKmh: Double? = null,
+    val visibilityMeters: Double? = null,
+    val uvIndex: Double? = null,
 )
 
 data class DailyForecast(

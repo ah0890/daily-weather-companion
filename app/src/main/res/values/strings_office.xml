@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Transport modes -->
+    <string name="transport_motorcycle">Motorcycle</string>
+    <string name="transport_car">Car</string>
+    <string name="transport_public">Public transport</string>
+    <string name="transport_walking">Walking</string>
+    <string name="transport_other">Other</string>
+
+    <!-- Office day card -->
+    <string name="office_day_title_today">Office day</string>
+    <string name="office_day_title_tomorrow">Tomorrow\'s office day</string>
+    <!-- e.g. "Advice for 🏍️ Motorcycle" -->
+    <string name="office_day_transport">Advice for %1$s %2$s</string>
+    <string name="office_day_change_transport">Change</string>
+    <string name="office_day_morning">Morning commute</string>
+    <string name="office_day_evening">Evening commute</string>
+    <string name="office_day_route_morning">Home → Office</string>
+    <string name="office_day_route_evening">Office → Home</string>
+    <!-- e.g. "Home → Office · 8:00 AM" -->
+    <string name="office_day_route_time">%1$s · %2$s</string>
+    <!-- e.g. "Rain 12%" -->
+    <string name="office_day_rain">Rain %1$d%%</string>
+    <string name="office_day_wind">Wind %1$s</string>
+    <string name="office_day_gusts">gusts %1$s</string>
+    <string name="office_day_rain_peak">Highest rain chance around %1$s</string>
+
+    <!-- Office Weather Score -->
+    <!-- e.g. "82 / 100 · Good" -->
+    <string name="score_value">%1$d / 100 · %2$s</string>
+    <string name="score_description">Office weather score: %2$s, %1$d/100</string>
+    <string name="score_good">Good</string>
+    <string name="score_moderate">Moderate</string>
+    <string name="score_poor">Poor</string>
+    <string name="score_disclaimer">The score summarises the forecast for your trips and working hours. It\'s a guide, not a safety rating.</string>
+
+    <!-- Trip headlines by transport mode -->
+    <string name="advice_motorcycle_good">Bike conditions look favourable</string>
+    <string name="advice_motorcycle_caution">Ride with extra care</string>
+    <string name="advice_motorcycle_bad">Riding conditions may be difficult</string>
+    <string name="advice_car_good">Driving conditions look good</string>
+    <string name="advice_car_caution">Drive with extra care</string>
+    <string name="advice_car_bad">Difficult driving conditions possible</string>
+    <string name="advice_public_good">Travel conditions look good</string>
+    <string name="advice_public_caution">Some weather to plan for</string>
+    <string name="advice_public_bad">Weather may disrupt your journey</string>
+    <string name="advice_walking_good">Walking conditions look pleasant</string>
+    <string name="advice_walking_caution">Walk prepared</string>
+    <string name="advice_walking_bad">Unpleasant walking conditions possible</string>
+    <string name="advice_other_good">Travel conditions look good</string>
+    <string name="advice_other_caution">Travel with extra care</string>
+    <string name="advice_other_bad">Difficult travel conditions possible</string>
+
+    <!-- Hazards -->
+    <string name="hazard_thunderstorm">Thunderstorms possible</string>
+    <string name="hazard_gale">Very strong wind possible</string>
+    <string name="hazard_dense_fog">Dense fog possible</string>
+    <string name="hazard_extreme_heat">Extreme heat expected</string>
+    <string name="hazard_wintry">Snow or ice possible</string>
+    <string name="hazard_heavy_rain">Heavy rain possible</string>
+    <string name="hazard_rain_likely">Rain likely</string>
+    <string name="hazard_strong_wind">Strong wind</string>
+    <string name="hazard_poor_visibility">Poor visibility possible</string>
+    <string name="hazard_heat">Very hot</string>
+    <string name="hazard_rain_possible">Rain possible</string>
+    <string name="hazard_high_uv">High UV</string>
+
+    <!-- Tips -->
+    <string name="tip_consider_alternative">🚗 Consider the car or public transport</string>
+    <string name="tip_rain_gear">🌧️ Pack rain gear</string>
+    <string name="tip_umbrella">☔ Take an umbrella</string>
+    <string name="tip_consider_umbrella">🌂 An umbrella may be useful</string>
+    <string name="tip_extra_time">⏱️ Allow extra travel time</string>
+    <string name="tip_ride_carefully">💨 Watch out for gusts while riding</string>
+    <string name="tip_water">💧 Carry water if you\'ll be outdoors</string>
+    <string name="tip_sun_protection">🧴 Consider sun protection if you\'ll be outdoors</string>
+
+    <!-- Travel checklist -->
+    <string name="checklist_title_today">Today\'s travel checklist</string>
+    <string name="checklist_title_tomorrow">Tomorrow\'s travel checklist</string>
+    <string name="checklist_umbrella">Umbrella</string>
+    <string name="checklist_rain_gear">Rain gear</string>
+    <string name="checklist_motorcycle">Motorcycle</string>
+    <string name="checklist_jacket">Jacket</string>
+    <string name="checklist_water">Water</string>
+    <string name="checklist_sunglasses">Sunglasses</string>
+    <string name="checklist_sun_protection">Sun protection</string>
+    <string name="checklist_recommended">Recommended</string>
+    <string name="checklist_useful">Useful</string>
+    <string name="checklist_car_morning">Consider the car for the morning trip</string>
+    <string name="checklist_car_return">Consider the car for the return trip</string>
+    <string name="checklist_car_both">Consider the car today</string>
+
+    <!-- Settings -->
+    <string name="settings_transport">My transportation</string>
+    <string name="settings_transport_hint">Commute advice is tailored to how you travel.</string>
+</resources>

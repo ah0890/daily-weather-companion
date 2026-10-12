@@ -29,7 +29,10 @@
     "precipitation": [0.0, 0.0, 0.4, 1.6],
     "weather_code": [2, 3, 61, 63],
     "wind_speed_10m": [14.0, 15.2, 18.9, 21.3],
-    "is_day": [1, 1, 1, 1]
+    "wind_gusts_10m": [25.2, 27.0, 33.5, 41.8],
+    "is_day": [1, 1, 1, 1],
+    "visibility": [24140.0, 18000.0, 6400.0, 3200.0],
+    "uv_index": [0.8, 1.5, 1.1, -0.1]
   },
   "daily_units": { "time": "iso8601", "temperature_2m_max": "°C" },
   "daily": {

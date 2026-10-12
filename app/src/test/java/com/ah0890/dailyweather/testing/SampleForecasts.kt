@@ -61,4 +61,31 @@ object SampleForecasts {
             ),
         ),
     )
+
+    /** One hour of forecast with calm, dry, mild defaults; override only what a test is about. */
+    fun hour(
+        time: LocalDateTime = LocalDateTime.of(2026, 10, 10, 8, 0),
+        condition: WeatherCondition = WeatherCondition.PartlyCloudy,
+        temperatureC: Double = 20.0,
+        rainChance: Int? = 0,
+        rainMm: Double? = 0.0,
+        windKmh: Double? = 10.0,
+        gustsKmh: Double? = null,
+        visibilityM: Double? = null,
+        feelsLikeC: Double? = null,
+        uv: Double? = null,
+        isDay: Boolean = true,
+    ) = HourlyForecast(
+        time = time,
+        condition = condition,
+        temperatureC = temperatureC,
+        precipitationProbability = rainChance,
+        precipitationMm = rainMm,
+        windSpeedKmh = windKmh,
+        isDay = isDay,
+        feelsLikeC = feelsLikeC,
+        windGustsKmh = gustsKmh,
+        visibilityMeters = visibilityM,
+        uvIndex = uv,
+    )
 }

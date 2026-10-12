@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.ah0890.dailyweather.domain.model.CommuteTimes
 import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.ThemeMode
+import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.Flow
@@ -46,6 +47,10 @@ class DataStorePreferencesRepository(private val dataStore: DataStore<Preference
         dataStore.edit { it[Keys.EveningCommute] = time.toMinutes() }
     }
 
+    override suspend fun setTransportMode(mode: TransportMode) {
+        dataStore.edit { it[Keys.TransportMode] = mode.name }
+    }
+
     override suspend fun setDailyNotificationEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.NotificationEnabled] = enabled }
     }
@@ -67,6 +72,7 @@ class DataStorePreferencesRepository(private val dataStore: DataStore<Preference
                 morning = this[Keys.MorningCommute]?.toTimeOrNull() ?: defaults.commuteTimes.morning,
                 evening = this[Keys.EveningCommute]?.toTimeOrNull() ?: defaults.commuteTimes.evening,
             ),
+            transportMode = enumOrNull<TransportMode>(this[Keys.TransportMode]) ?: defaults.transportMode,
             dailyNotificationEnabled = this[Keys.NotificationEnabled] ?: defaults.dailyNotificationEnabled,
             dailyNotificationTime = this[Keys.NotificationTime]?.toTimeOrNull() ?: defaults.dailyNotificationTime,
             notificationPromptDismissed = this[Keys.NotificationPromptDismissed] ?: defaults.notificationPromptDismissed,
@@ -86,6 +92,7 @@ class DataStorePreferencesRepository(private val dataStore: DataStore<Preference
         val ThemeMode = stringPreferencesKey("theme_mode")
         val MorningCommute = intPreferencesKey("commute_morning_minutes")
         val EveningCommute = intPreferencesKey("commute_evening_minutes")
+        val TransportMode = stringPreferencesKey("transport_mode")
         val NotificationEnabled = booleanPreferencesKey("daily_notification_enabled")
         val NotificationTime = intPreferencesKey("daily_notification_minutes")
         val NotificationPromptDismissed = booleanPreferencesKey("notification_prompt_dismissed")

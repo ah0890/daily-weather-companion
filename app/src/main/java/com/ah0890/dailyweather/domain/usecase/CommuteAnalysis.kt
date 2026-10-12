@@ -6,8 +6,10 @@ import com.ah0890.dailyweather.domain.model.CommuteLegType
 import com.ah0890.dailyweather.domain.model.CommuteRain
 import com.ah0890.dailyweather.domain.model.CommuteSummary
 import com.ah0890.dailyweather.domain.model.CommuteTimes
+import com.ah0890.dailyweather.domain.model.HourlyForecast
 import com.ah0890.dailyweather.domain.model.WeatherForecast
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 
@@ -39,6 +41,17 @@ object CommuteAnalysis {
         return CommuteSummary(date = date, isToday = date == today, legs = legs, advice = advice(legs))
     }
 
+    /**
+     * Hours from the morning trip (or from now, once it is over) to the end of the evening trip on
+     * [summary]'s day: the "office day" as far as the weather is concerned.
+     */
+    fun workdayHours(forecast: WeatherForecast, summary: CommuteSummary): List<HourlyForecast> {
+        val first = summary.legs.firstOrNull { it.type == CommuteLegType.Morning }?.departure ?: forecast.current.time
+        val end = summary.legs.maxOf { it.departure }.truncatedTo(ChronoUnit.HOURS).plusHours(TRIP_HOURS)
+        val from = maxOf(first.truncatedTo(ChronoUnit.HOURS), forecast.current.time.truncatedTo(ChronoUnit.HOURS))
+        return forecast.hourly.filter { !it.time.isBefore(from) && it.time.isBefore(end) }
+    }
+
     fun advice(legs: List<CommuteLeg>): CommuteAdvice = when {
         legs.any { it.rain == CommuteRain.Likely } -> CommuteAdvice.RainLikely
         legs.any { it.rain == CommuteRain.Possible } -> CommuteAdvice.RainPossible
@@ -61,8 +74,10 @@ object CommuteAnalysis {
         }
         val atDeparture = window.firstOrNull() ?: return null
 
-        val chance = window.mapNotNull { it.precipitationProbability }.maxOrNull()
+        val peak = window.filter { it.precipitationProbability != null }.maxByOrNull { it.precipitationProbability!! }
+        val chance = peak?.precipitationProbability
         val wind = window.mapNotNull { it.windSpeedKmh }.maxOrNull()
+        val gusts = window.mapNotNull { it.windGustsKmh }.maxOrNull()
         // Show the wettest condition of the trip so the icon matches the rain chance.
         val shown = window.firstOrNull { it.condition.isPrecipitation } ?: atDeparture
 
@@ -76,6 +91,14 @@ object CommuteAnalysis {
             windSpeedKmh = wind,
             rain = rainLevel(chance),
             windy = (wind ?: 0.0) >= WINDY_KMH,
+            windGustsKmh = gusts,
+            rainPeakTime = peak?.time,
+            visibilityMeters = window.mapNotNull { it.visibilityMeters }.minOrNull(),
+            feelsLikeC = atDeparture.feelsLikeC ?: atDeparture.temperatureC,
+            uvIndex = window.mapNotNull { it.uvIndex }.maxOrNull(),
+            hazards = HazardAnalysis.detect(window),
         )
     }
+
+    private fun maxOf(a: LocalDateTime, b: LocalDateTime) = if (a.isAfter(b)) a else b
 }

@@ -54,6 +54,10 @@ class OpenMeteoMapperTest {
         assertEquals(0.4, hourly[2].precipitationMm!!, 0.0)
         assertEquals(WeatherCondition.Rain, hourly[2].condition)
         assertEquals(listOf(8, 12, 55, 78), hourly.map { it.precipitationProbability })
+        assertEquals(listOf(25.2, 27.0, 33.5, 41.8), hourly.map { it.windGustsKmh })
+        assertEquals(3200.0, hourly[3].visibilityMeters!!, 0.0)
+        assertEquals(1.5, hourly[1].uvIndex!!, 0.0)
+        assertEquals("negative UV is clamped", 0.0, hourly[3].uvIndex!!, 0.0)
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.ah0890.dailyweather.domain.repository
 
 import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.ThemeMode
+import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalTime
@@ -18,6 +19,8 @@ interface PreferencesRepository {
     suspend fun setMorningCommute(time: LocalTime)
 
     suspend fun setEveningCommute(time: LocalTime)
+
+    suspend fun setTransportMode(mode: TransportMode)
 
     suspend fun setDailyNotificationEnabled(enabled: Boolean)
 

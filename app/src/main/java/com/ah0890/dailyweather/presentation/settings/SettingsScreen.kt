@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -22,6 +24,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -54,6 +57,7 @@ import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.SavedLocation
 import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.ThemeMode
+import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.presentation.components.LOCATION_PERMISSION
 import com.ah0890.dailyweather.presentation.components.RelativeAge
@@ -65,6 +69,8 @@ import com.ah0890.dailyweather.presentation.components.openUrl
 import com.ah0890.dailyweather.presentation.components.requestNotificationPermission
 import com.ah0890.dailyweather.presentation.components.text
 import com.ah0890.dailyweather.presentation.home.HomeViewModel
+import com.ah0890.dailyweather.presentation.weather.emoji
+import com.ah0890.dailyweather.presentation.weather.labelRes
 import com.ah0890.dailyweather.ui.theme.cardContainer
 import java.time.Instant
 import java.time.LocalTime
@@ -131,6 +137,7 @@ fun SettingsRoute(
             openNotificationSettings = { context.openNotificationSettings() },
             setMorningCommute = settingsViewModel::setMorningCommute,
             setEveningCommute = settingsViewModel::setEveningCommute,
+            setTransportMode = settingsViewModel::setTransportMode,
             setTemperatureUnit = settingsViewModel::setTemperatureUnit,
             setThemeMode = settingsViewModel::setThemeMode,
             openPrivacy = onOpenPrivacy,
@@ -146,6 +153,7 @@ class SettingsActions(
     val openNotificationSettings: () -> Unit = {},
     val setMorningCommute: (LocalTime) -> Unit = {},
     val setEveningCommute: (LocalTime) -> Unit = {},
+    val setTransportMode: (TransportMode) -> Unit = {},
     val setTemperatureUnit: (TemperatureUnit) -> Unit = {},
     val setThemeMode: (ThemeMode) -> Unit = {},
     val openPrivacy: () -> Unit = {},
@@ -255,6 +263,12 @@ fun SettingsScreen(
                 value = preferences.commuteTimes.evening.format(timeFormatter),
                 onClick = { editing = "evening" },
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            ClickableRow(
+                title = stringResource(R.string.settings_transport),
+                value = preferences.transportMode.emoji + " " + stringResource(preferences.transportMode.labelRes),
+                onClick = { editing = "transport" },
+            )
             Text(
                 text = stringResource(R.string.settings_commute_hint),
                 style = MaterialTheme.typography.bodyMedium,
@@ -323,6 +337,11 @@ fun SettingsScreen(
         "evening" -> TimeDialog(
             initial = preferences.commuteTimes.evening,
             onConfirm = { actions.setEveningCommute(it); editing = null },
+            onDismiss = { editing = null },
+        )
+        "transport" -> TransportDialog(
+            selected = preferences.transportMode,
+            onSelect = { actions.setTransportMode(it); editing = null },
             onDismiss = { editing = null },
         )
     }
@@ -399,6 +418,43 @@ private fun <T> ChoiceRow(title: String, options: List<Choice<T>>, selected: T, 
             }
         }
     }
+}
+
+@Composable
+private fun TransportDialog(selected: TransportMode, onSelect: (TransportMode) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_transport)) },
+        text = {
+            Column(modifier = Modifier.selectableGroup()) {
+                TransportMode.entries.forEach { mode ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                            .selectable(selected = mode == selected, role = Role.RadioButton, onClick = { onSelect(mode) }),
+                    ) {
+                        RadioButton(selected = mode == selected, onClick = null)
+                        Text(
+                            text = mode.emoji + "  " + stringResource(mode.labelRes),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(start = 12.dp),
+                        )
+                    }
+                }
+                Text(
+                    text = stringResource(R.string.settings_transport_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_time_picker_cancel)) }
+        },
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

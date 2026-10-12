@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.ah0890.dailyweather.DailyWeatherApplication
 import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.ThemeMode
+import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.repository.PreferencesRepository
 import com.ah0890.dailyweather.notifications.NotificationScheduler
@@ -34,6 +35,8 @@ class SettingsViewModel(
     fun setMorningCommute(time: LocalTime) = launch { repository.setMorningCommute(time) }
 
     fun setEveningCommute(time: LocalTime) = launch { repository.setEveningCommute(time) }
+
+    fun setTransportMode(mode: TransportMode) = launch { repository.setTransportMode(mode) }
 
     fun setDailyNotificationEnabled(enabled: Boolean) = launch {
         repository.setDailyNotificationEnabled(enabled)

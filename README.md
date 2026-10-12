@@ -1,15 +1,16 @@
 # Daily Weather Companion
 
-A calm, location-aware Android weather app built around one question: **what should I expect today, and do I need an umbrella?**
+A calm, location-aware Android weather app built around one question: **what does today's weather mean for my workday?**
 
-> **Version 1.0.1** — all core features are implemented and covered by 192 unit tests. Built for personal daily use.
+> **Version 1.0.1**, being extended into a personal weather and office-commute assistant. Covered by 236 unit tests. Built for personal daily use.
 
 ## Overview
 
 Daily Weather Companion focuses on daily decisions rather than raw data:
 
-- Is rain expected during the day, and when?
-- Should I take an umbrella, or travel differently to work?
+- Will it rain on the way to the office, or on the way home?
+- Should I ride the motorcycle today, take the car, or carry an umbrella?
+- Is it unusually hot, windy or foggy for the commute?
 - What does the rest of the week look like?
 
 Secondary information (humidity, wind, UV, visibility) stays available but visually subordinate.
@@ -25,11 +26,13 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | Current weather with details, pull-to-refresh and error states | ✅ Done |
 | Hourly forecast timeline (next 24 h, rain chance, amount, wind) | ✅ Done |
 | "Today's outlook": rain timing and umbrella recommendation | ✅ Done |
-| "Plan your day": morning/evening commute summary | ✅ Done |
+| "Office day": morning (Home → Office) and evening (Office → Home) commute with advice for your transport | ✅ Done |
+| Office Weather Score (0–100) and "Today's travel checklist" | ✅ Done |
+| My transportation: motorcycle, car, public transport, walking, other | ✅ Done |
 | 7-day forecast with expandable day details and hour-by-hour rain | ✅ Done |
 | Offline cache of the last forecast with "last updated" notice | ✅ Done |
 | Daily ~7:00 AM weather notification (WorkManager) | ✅ Done |
-| Settings: location, commute times, °C/°F, System/Light/Dark theme, privacy, about | ✅ Done |
+| Settings: location, commute times, transport, °C/°F, System/Light/Dark theme, privacy, about | ✅ Done |
 
 ## Screenshots
 
@@ -92,7 +95,7 @@ The app uses **[Open-Meteo](https://open-meteo.com/)**, chosen over keyed servic
 
 - Free for non-commercial use, **no API key required**
 - Coordinates-based hourly and daily forecasts over HTTPS
-- Hourly **precipitation probability** and **precipitation amount**, temperature, apparent temperature, wind, UV index, visibility, sunrise/sunset and WMO weather codes
+- Hourly **precipitation probability** and **precipitation amount**, temperature, apparent temperature, wind and gusts, UV index, visibility, sunrise/sunset and WMO weather codes
 - Good documentation and generous rate limits (~10,000 calls/day for non-commercial use)
 
 One request returns current conditions, 7 days of hourly data and 7 daily summaries, and the app requests it only when the location changes, on pull-to-refresh, on return after 30 minutes, and once each morning — far below the free limits. Data is attributed in Settings as required by Open-Meteo's CC BY 4.0 licence.
@@ -113,9 +116,27 @@ Rain advice is computed from Open-Meteo's **hourly precipitation probability** (
 | **Consider** an umbrella | peak chance ≥ 30 %, or ≥ 1 mm expected |
 | **Probably not needed** | otherwise |
 
-**Commute ("Plan your day")** looks at the departure hour and the hour after it for the morning (default 8:00) and evening (default 17:00) trips, using the same rain thresholds, plus a warning for sustained wind ≥ 39 km/h — relevant when riding a motorcycle. After the evening trip, tomorrow's commute is shown.
+The wording is deliberately non-absolute ("recommended", "consider", "probably not needed"). The logic lives in `domain/usecase/RainAnalysis.kt` and is unit-tested.
 
-The wording is deliberately non-absolute ("recommended", "consider", "probably not needed"). The logic lives in `domain/usecase/RainAnalysis.kt` and `CommuteAnalysis.kt` and is unit-tested.
+## Office Day and Commute Advice
+
+The **Office day** card looks at the departure hour and the hour after it for the morning (Home → Office, default 8:00) and evening (Office → Home, default 17:00) trips. After the evening trip, tomorrow's office day is shown. For each trip the app detects hazards with fixed thresholds (`domain/usecase/HazardAnalysis.kt`):
+
+| Hazard | Threshold |
+| --- | --- |
+| Rain possible / likely | hourly chance ≥ 30 % / ≥ 60 % |
+| Heavy rain | ≥ 4 mm in an hour (Met Office definition) |
+| Thunderstorm, snow or ice | WMO weather code |
+| Strong wind / gale | sustained ≥ 39 / 62 km/h, or gusts ≥ 60 / 85 km/h |
+| Poor visibility / dense fog | < 1 km / < 200 m (or a fog code) |
+| Very hot / extreme heat | feels like ≥ 35 °C / ≥ 41 °C |
+| High UV | UV index ≥ 6 in daylight |
+
+**My transportation** decides how much each hazard matters (`TravelAdvisor.kt`): a motorcyclist is warned about rain, wind, visibility and storms; a driver mainly about heavy rain, fog and severe weather; someone walking about rain, heat, UV and wind. Each trip gets a cautious verdict ("Bike conditions look favourable", "Ride with extra care", "Riding conditions may be difficult") plus tips such as *Pack rain gear*, *Consider the car or public transport* or *Allow extra travel time*.
+
+The **Office Weather Score** starts at 100 and subtracts 0.3 points per percent of rain chance on each trip and fixed penalties for hazards (full on a trip, half between trips). 75+ is *Good*, 45–74 *Moderate*, below 45 *Poor*. It summarises the forecast and is not a safety rating.
+
+**Today's travel checklist** lists only what is relevant: umbrella or rain gear, "consider the car for the return trip" (motorcycle), jacket (feels like ≤ 15 °C, 3 °C colder when riding), water (feels like ≥ 32 °C), sunglasses (bright daytime trip) and sun protection (UV ≥ 6).
 
 ## Offline Behaviour
 
@@ -246,7 +267,7 @@ Create a keystore once with `keytool -genkeypair -v -keystore release.jks -keyal
 ## Testing
 
 ```bash
-./gradlew testDebugUnitTest    # JVM unit tests (192)
+./gradlew testDebugUnitTest    # JVM unit tests (236)
 ./gradlew lintDebug            # Android Lint
 ```
 
@@ -254,7 +275,7 @@ The unit tests cover, among other things:
 
 - **Parsing and validation** of Open-Meteo responses, including malformed, partial and out-of-range data, and the real HTTP stack against a local mock server (timeouts, 429, 5xx, invalid JSON, unreachable server).
 - **Rain and umbrella rules** at 0 / 20 / 50 / 80 / 100 %, threshold boundaries, period merging and the rest-of-day window.
-- **Commute summary**, **offline cache** (corrupt files, format versions, location mismatch) and **stale-forecast handling**.
+- **Commute, hazard thresholds, transport-specific advice, office score and checklist**, **offline cache** (corrupt files, format versions, location mismatch) and **stale-forecast handling**.
 - **Location and settings persistence**, permission and location state handling in the ViewModels.
 - **Notification scheduling** (including daylight-saving changes, late runs and retries).
 
@@ -276,7 +297,7 @@ Things that need a real device or emulator:
 
 ## Future Improvements
 
-The architecture (repository interfaces, provider-independent domain models, pure use cases) is meant to make these straightforward: multiple saved locations, a home-screen widget, severe-weather alerts, air quality, pollen, UV alerts, custom notification schedules and Wear OS support.
+The architecture (repository interfaces, provider-independent domain models, pure use cases) is meant to make these straightforward: workday notification schedules, multiple saved locations, a home-screen widget, severe-weather alerts, air quality, pollen, UV alerts, custom notification schedules and Wear OS support.
 
 ## License
 
