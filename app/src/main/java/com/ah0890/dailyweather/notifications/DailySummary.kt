@@ -6,11 +6,14 @@ import com.ah0890.dailyweather.domain.model.LegAdvice
 import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.TravelRating
 import com.ah0890.dailyweather.domain.model.UmbrellaAdvice
+import com.ah0890.dailyweather.domain.model.UvCategory
+import com.ah0890.dailyweather.domain.model.UvOutlook
 import com.ah0890.dailyweather.domain.model.WeatherCondition
 import com.ah0890.dailyweather.domain.model.WeatherForecast
 import com.ah0890.dailyweather.domain.usecase.OfficeDayPlanner
 import com.ah0890.dailyweather.domain.usecase.RainAnalysis
 import com.ah0890.dailyweather.domain.usecase.RainSummary
+import com.ah0890.dailyweather.domain.usecase.UvAnalysis
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -19,6 +22,7 @@ import java.time.temporal.ChronoUnit
  * Language-independent content of the morning notification.
  *
  * @property commute advice for today's remaining trips, empty when today isn't a workday.
+ * @property uv today's UV when it reaches the user's alert level, otherwise null.
  */
 data class DailySummary(
     val locationName: String?,
@@ -29,6 +33,7 @@ data class DailySummary(
     val rain: RainSummary,
     val umbrella: UmbrellaAdvice,
     val commute: List<LegAdvice> = emptyList(),
+    val uv: UvOutlook? = null,
 ) {
     companion object {
         /**
@@ -43,6 +48,7 @@ data class DailySummary(
             mode: TransportMode = TransportMode.Other,
             workdays: Set<DayOfWeek> = emptySet(),
             officeForecast: WeatherForecast = forecast,
+            uvAlertLevel: UvCategory? = null,
         ): DailySummary {
             val current = forecast.advancedTo(now)
             val outlook = RainAnalysis.outlookForRestOfToday(current)
@@ -59,6 +65,7 @@ data class DailySummary(
                 rain = RainAnalysis.summary(outlook.rain, current.current.time),
                 umbrella = outlook.recommendation.umbrella,
                 commute = officeDay?.advice.orEmpty(),
+                uv = uvAlertLevel?.let { level -> UvAnalysis.today(current)?.takeIf { UvAnalysis.reaches(it, level) } },
             )
         }
     }

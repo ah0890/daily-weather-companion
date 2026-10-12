@@ -24,6 +24,9 @@ data class UserPreferences(
     val eveningAlertDays: Set<DayOfWeek> = WEEKDAYS,
     /** Separate notification when severe weather is forecast, checked with each scheduled run. */
     val severeAlertsEnabled: Boolean = true,
+    /** Mention UV in the morning summary when today reaches [uvAlertLevel]. */
+    val uvAlertEnabled: Boolean = true,
+    val uvAlertLevel: UvCategory = UvCategory.High,
     /** The one-time "turn on morning summaries" prompt on the Today screen was answered. */
     val notificationPromptDismissed: Boolean = false,
 ) {

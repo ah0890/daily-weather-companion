@@ -20,6 +20,16 @@
     <string name="rain_soon_possible">🌂 Some chance of rain in the next two hours (%1$d%%).</string>
     <string name="rain_soon_none">☀️ No significant rain expected in the next two hours.</string>
 
+    <!-- UV status -->
+    <!-- e.g. "UV: High · up to 7 around 12 PM" -->
+    <string name="uv_status">UV: %1$s · up to %2$d around %3$s</string>
+    <string name="uv_status_no_time">UV: %1$s · up to %2$d today</string>
+    <string name="uv_high_hours">UV 6 or higher from %1$s to %2$s</string>
+    <string name="uv_tip">Consider sun protection if you\'ll be outdoors.</string>
+    <!-- Morning summary line, e.g. "☀️ High UV (7) expected around 12 PM." -->
+    <string name="uv_alert_line">☀️ %1$s UV (%2$d) expected around %3$s. Consider sun protection if you\'ll be outdoors.</string>
+    <string name="uv_alert_line_no_time">☀️ %1$s UV (%2$d) expected today. Consider sun protection if you\'ll be outdoors.</string>
+
     <!-- Notification -->
     <string name="notification_severe_channel_name">Severe weather</string>
     <string name="notification_severe_channel_description">Thunderstorms, heavy rain, gales, dense fog, extreme heat, snow or ice in the forecast.</string>
@@ -27,6 +37,11 @@
     <string name="notification_severe_title_location">⚠️ Severe weather risk · %1$s</string>
 
     <!-- Settings -->
+    <string name="settings_uv_switch">UV alert</string>
+    <string name="settings_uv_switch_summary">Mention UV in the morning summary when it gets this high</string>
+    <string name="settings_uv_level">Alert from</string>
+    <string name="settings_uv_high">High (6+)</string>
+    <string name="settings_uv_very_high">Very high (8+)</string>
     <string name="settings_severe_switch">Severe weather alerts</string>
     <string name="settings_severe_switch_summary">Checked with each scheduled notification. Uses forecast thresholds, not official warnings.</string>
 </resources>

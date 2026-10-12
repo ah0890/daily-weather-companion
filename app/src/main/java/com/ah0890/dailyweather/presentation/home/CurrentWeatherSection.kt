@@ -44,6 +44,7 @@ import com.ah0890.dailyweather.domain.usecase.OfficeDayPlanner
 import com.ah0890.dailyweather.domain.usecase.RainAnalysis
 import com.ah0890.dailyweather.domain.usecase.RainSoon
 import com.ah0890.dailyweather.domain.usecase.SevereWeatherAnalysis
+import com.ah0890.dailyweather.domain.usecase.UvAnalysis
 import com.ah0890.dailyweather.presentation.components.LocalUserPreferences
 import com.ah0890.dailyweather.presentation.components.RelativeAge
 import com.ah0890.dailyweather.presentation.components.text
@@ -147,6 +148,8 @@ private fun WeatherContent(
             }
             val outlook = remember(state.forecast) { RainAnalysis.outlookForRestOfToday(state.forecast) }
             TodayOutlookCard(outlook, now = state.forecast.current.time)
+            val uv = remember(state.forecast) { UvAnalysis.today(state.forecast) }
+            if (uv != null) UvCard(uv, highlighted = preferences.uvAlertEnabled && UvAnalysis.reaches(uv, preferences.uvAlertLevel))
             AirQualityCard(airQuality)
             HourlyForecastRow(
                 hours = state.forecast.upcomingHours(),

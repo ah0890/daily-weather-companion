@@ -64,11 +64,15 @@ class WeatherFormattingTest {
     @Test
     fun `uv index categories follow WHO bands`() {
         assertEquals(R.string.uv_low, uvLevelRes(0.0))
-        assertEquals(R.string.uv_low, uvLevelRes(2.9))
-        assertEquals(R.string.uv_moderate, uvLevelRes(3.0))
-        assertEquals(R.string.uv_high, uvLevelRes(6.0))
-        assertEquals(R.string.uv_very_high, uvLevelRes(8.0))
-        assertEquals(R.string.uv_extreme, uvLevelRes(11.0))
+        assertEquals(R.string.uv_low, uvLevelRes(2.4))
+        // Shown as "3", so it must read as moderate.
+        assertEquals(R.string.uv_moderate, uvLevelRes(2.5))
+        assertEquals(R.string.uv_moderate, uvLevelRes(5.4))
+        assertEquals(R.string.uv_high, uvLevelRes(5.5))
+        assertEquals(R.string.uv_high, uvLevelRes(7.4))
+        assertEquals(R.string.uv_very_high, uvLevelRes(7.5))
+        assertEquals(R.string.uv_very_high, uvLevelRes(10.4))
+        assertEquals(R.string.uv_extreme, uvLevelRes(10.5))
     }
 
     @Test

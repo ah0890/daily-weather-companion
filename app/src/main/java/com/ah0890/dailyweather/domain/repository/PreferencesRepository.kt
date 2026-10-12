@@ -4,6 +4,7 @@ import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.ThemeMode
 import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
+import com.ah0890.dailyweather.domain.model.UvCategory
 import kotlinx.coroutines.flow.Flow
 import java.time.DayOfWeek
 import java.time.LocalTime
@@ -38,6 +39,10 @@ interface PreferencesRepository {
     suspend fun setEveningAlertDays(days: Set<DayOfWeek>)
 
     suspend fun setSevereAlertsEnabled(enabled: Boolean)
+
+    suspend fun setUvAlertEnabled(enabled: Boolean)
+
+    suspend fun setUvAlertLevel(level: UvCategory)
 
     suspend fun setNotificationPromptDismissed()
 }

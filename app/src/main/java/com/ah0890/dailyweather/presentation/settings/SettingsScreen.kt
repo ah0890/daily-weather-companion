@@ -61,6 +61,7 @@ import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.ThemeMode
 import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
+import com.ah0890.dailyweather.domain.model.UvCategory
 import com.ah0890.dailyweather.presentation.components.LOCATION_PERMISSION
 import com.ah0890.dailyweather.presentation.components.RelativeAge
 import com.ah0890.dailyweather.presentation.components.canPostNotifications
@@ -190,6 +191,8 @@ fun SettingsRoute(
             setEveningAlertDays = settingsViewModel::setEveningAlertDays,
             setWorkdays = settingsViewModel::setWorkdays,
             setSevereAlertsEnabled = settingsViewModel::setSevereAlertsEnabled,
+            setUvAlertEnabled = settingsViewModel::setUvAlertEnabled,
+            setUvAlertLevel = settingsViewModel::setUvAlertLevel,
             openNotificationSettings = { context.openNotificationSettings() },
             setMorningCommute = settingsViewModel::setMorningCommute,
             setEveningCommute = settingsViewModel::setEveningCommute,
@@ -212,6 +215,8 @@ class SettingsActions(
     val setEveningAlertDays: (Set<DayOfWeek>) -> Unit = {},
     val setWorkdays: (Set<DayOfWeek>) -> Unit = {},
     val setSevereAlertsEnabled: (Boolean) -> Unit = {},
+    val setUvAlertEnabled: (Boolean) -> Unit = {},
+    val setUvAlertLevel: (UvCategory) -> Unit = {},
     val openNotificationSettings: () -> Unit = {},
     val setMorningCommute: (LocalTime) -> Unit = {},
     val setEveningCommute: (LocalTime) -> Unit = {},
@@ -321,6 +326,26 @@ fun SettingsScreen(
                 checked = preferences.severeAlertsEnabled,
                 onCheckedChange = actions.setSevereAlertsEnabled,
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            SwitchRow(
+                title = stringResource(R.string.settings_uv_switch),
+                summary = stringResource(R.string.settings_uv_switch_summary),
+                checked = preferences.uvAlertEnabled,
+                onCheckedChange = actions.setUvAlertEnabled,
+            )
+            if (preferences.uvAlertEnabled) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                    ChoiceRow(
+                        title = stringResource(R.string.settings_uv_level),
+                        options = listOf(
+                            Choice(UvCategory.High, R.string.settings_uv_high),
+                            Choice(UvCategory.VeryHigh, R.string.settings_uv_very_high),
+                        ),
+                        selected = preferences.uvAlertLevel,
+                        onSelect = actions.setUvAlertLevel,
+                    )
+                }
+            }
             if ((preferences.dailyNotificationEnabled || preferences.eveningAlertEnabled) && !notificationsAllowed) {
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp),

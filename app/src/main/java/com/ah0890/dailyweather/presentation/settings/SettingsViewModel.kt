@@ -11,6 +11,7 @@ import com.ah0890.dailyweather.domain.model.ThemeMode
 import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.repository.PreferencesRepository
+import com.ah0890.dailyweather.domain.model.UvCategory
 import com.ah0890.dailyweather.notifications.NotificationKind
 import com.ah0890.dailyweather.notifications.NotificationScheduler
 import com.ah0890.dailyweather.notifications.sync
@@ -62,6 +63,10 @@ class SettingsViewModel(
         updateNotification(NotificationKind.EveningCommute) { repository.setEveningAlertDays(days) }
 
     fun setSevereAlertsEnabled(enabled: Boolean) = launch { repository.setSevereAlertsEnabled(enabled) }
+
+    fun setUvAlertEnabled(enabled: Boolean) = launch { repository.setUvAlertEnabled(enabled) }
+
+    fun setUvAlertLevel(level: UvCategory) = launch { repository.setUvAlertLevel(level) }
 
     /** The one-time prompt on the Today screen was answered either way. */
     fun dismissNotificationPrompt() = launch { repository.setNotificationPromptDismissed() }

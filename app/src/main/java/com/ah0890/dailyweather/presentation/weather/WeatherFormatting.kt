@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.TemperatureUnit
+import com.ah0890.dailyweather.domain.model.UvCategory
 import com.ah0890.dailyweather.presentation.components.LocalUserPreferences
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -48,12 +49,26 @@ fun formatVisibility(meters: Double): String {
     }
 }
 
-/** WHO UV index category. */
+/** WHO UV index category of the index as displayed (rounded), so "3" never reads as "Low". */
 @StringRes
-fun uvLevelRes(index: Double): Int = when {
-    index < 3 -> R.string.uv_low
-    index < 6 -> R.string.uv_moderate
-    index < 8 -> R.string.uv_high
-    index < 11 -> R.string.uv_very_high
-    else -> R.string.uv_extreme
-}
+fun uvLevelRes(index: Double): Int = UvCategory.of(index).labelRes
+
+@get:StringRes
+val UvCategory.labelRes: Int
+    get() = when (this) {
+        UvCategory.Low -> R.string.uv_low
+        UvCategory.Moderate -> R.string.uv_moderate
+        UvCategory.High -> R.string.uv_high
+        UvCategory.VeryHigh -> R.string.uv_very_high
+        UvCategory.Extreme -> R.string.uv_extreme
+    }
+
+/** Colour dot for a UV category; the category name is always shown next to it. */
+val UvCategory.dot: String
+    get() = when (this) {
+        UvCategory.Low -> "🟢"
+        UvCategory.Moderate -> "🟡"
+        UvCategory.High -> "🟠"
+        UvCategory.VeryHigh -> "🔴"
+        UvCategory.Extreme -> "🟣"
+    }

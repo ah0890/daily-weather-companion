@@ -184,6 +184,7 @@ class DailySummaryWork(
             NotificationKind.MorningSummary -> {
                 val summary = DailySummary.from(
                     forecast, name, localNow, prefs.commuteTimes, prefs.transportMode, prefs.workdays, officeForecast,
+                    uvAlertLevel = prefs.uvAlertLevel.takeIf { prefs.uvAlertEnabled },
                 )
                 notifier.show(summary, prefs.temperatureUnit)
                 Outcome.Notified(summary)

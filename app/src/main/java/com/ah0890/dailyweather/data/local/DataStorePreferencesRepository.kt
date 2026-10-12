@@ -13,6 +13,8 @@ import com.ah0890.dailyweather.domain.model.ThemeMode
 import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.repository.PreferencesRepository
+import com.ah0890.dailyweather.domain.usecase.UvAnalysis
+import com.ah0890.dailyweather.domain.model.UvCategory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -85,6 +87,14 @@ class DataStorePreferencesRepository(private val dataStore: DataStore<Preference
         dataStore.edit { it[Keys.SevereAlertsEnabled] = enabled }
     }
 
+    override suspend fun setUvAlertEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.UvAlertEnabled] = enabled }
+    }
+
+    override suspend fun setUvAlertLevel(level: UvCategory) {
+        dataStore.edit { it[Keys.UvAlertLevel] = level.name }
+    }
+
     override suspend fun setNotificationPromptDismissed() {
         dataStore.edit { it[Keys.NotificationPromptDismissed] = true }
     }
@@ -107,6 +117,9 @@ class DataStorePreferencesRepository(private val dataStore: DataStore<Preference
             eveningAlertTime = this[Keys.EveningAlertTime]?.toTimeOrNull() ?: defaults.eveningAlertTime,
             eveningAlertDays = this[Keys.EveningAlertDays]?.toDaysOrNull() ?: defaults.eveningAlertDays,
             severeAlertsEnabled = this[Keys.SevereAlertsEnabled] ?: defaults.severeAlertsEnabled,
+            uvAlertEnabled = this[Keys.UvAlertEnabled] ?: defaults.uvAlertEnabled,
+            uvAlertLevel = enumOrNull<UvCategory>(this[Keys.UvAlertLevel])
+                ?.takeIf { it in UvAnalysis.ALERT_THRESHOLDS } ?: defaults.uvAlertLevel,
             notificationPromptDismissed = this[Keys.NotificationPromptDismissed] ?: defaults.notificationPromptDismissed,
         )
     }
@@ -139,6 +152,8 @@ class DataStorePreferencesRepository(private val dataStore: DataStore<Preference
         val EveningAlertTime = intPreferencesKey("evening_alert_minutes")
         val EveningAlertDays = intPreferencesKey("evening_alert_days")
         val SevereAlertsEnabled = booleanPreferencesKey("severe_alerts_enabled")
+        val UvAlertEnabled = booleanPreferencesKey("uv_alert_enabled")
+        val UvAlertLevel = stringPreferencesKey("uv_alert_level")
         val NotificationPromptDismissed = booleanPreferencesKey("notification_prompt_dismissed")
     }
 }

@@ -2,7 +2,7 @@
 
 A calm, location-aware Android weather app built around one question: **what does today's weather mean for my workday?**
 
-> **Version 1.0.1**, being extended into a personal weather and office-commute assistant. Covered by 329 unit tests. Built for personal daily use.
+> **Version 1.0.1**, being extended into a personal weather and office-commute assistant. Covered by 336 unit tests. Built for personal daily use.
 
 ## Overview
 
@@ -37,6 +37,7 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | Severe-weather alerts, "rain soon", poor-visibility and heat advisories | ✅ Done |
 | Air quality (US AQI category, main pollutant, pollutant details) | ✅ Done |
 | Pollen (tree, grass, weed) where the provider has data (Europe only) | ✅ Done, limited by data |
+| UV status and configurable UV alert | ✅ Done |
 | Settings: location, office days, commute times, transport, notification days, °C/°F, System/Light/Dark theme, privacy, about | ✅ Done |
 
 ## Screenshots
@@ -163,6 +164,12 @@ Alerts are only raised when forecast data meets a threshold, use cautious wordin
 Open-Meteo also offers a free, keyless **air-quality API** (CAMS model data), so no new provider was needed. It is called with the same rounded coordinates, for the place on screen only, and kept in memory for 30 minutes.
 
 The Today screen shows one simple line, e.g. **🟡 Air quality: Moderate** · US AQI 72 · Main pollutant: Fine particles (PM2.5), and *"May reach Unhealthy around 3 PM"* if a worse category is forecast within 24 hours. Tapping it reveals the pollutant concentrations (µg/m³) and sub-indices. Categories follow the US EPA bands (Good 0–50, Moderate 51–100, Unhealthy for sensitive groups 101–150, Unhealthy 151–200, Very unhealthy 201–300, Hazardous 301+). If the service can't be reached, has no data for the place, or a copy older than 3 hours would be needed, the card says **"Air quality unavailable"**; no value is ever guessed, and the forecast is unaffected.
+
+## UV Status and UV Alerts
+
+Hourly UV from the forecast gives today's remaining peak, e.g. **🟠 UV: High · up to 7 around 12 PM**, the hours rated high (*"UV 6 or higher from 11 AM to 3 PM"*) and, from *Moderate* up, *"Consider sun protection if you'll be outdoors."* Categories follow the WHO bands on the index as displayed (rounded): Low 0–2, Moderate 3–5, High 6–7, Very high 8–10, Extreme 11+.
+
+The **UV alert** (Settings → Notifications, default on from *High*, or from *Very high*) highlights the card and adds a line to the morning summary: *"☀️ High UV (7) expected around 12 PM. Consider sun protection if you'll be outdoors."* No medical advice is given.
 
 ### Pollen
 
@@ -313,7 +320,7 @@ Create a keystore once with `keytool -genkeypair -v -keystore release.jks -keyal
 ## Testing
 
 ```bash
-./gradlew testDebugUnitTest    # JVM unit tests (329)
+./gradlew testDebugUnitTest    # JVM unit tests (336)
 ./gradlew lintDebug            # Android Lint
 ```
 
@@ -323,6 +330,7 @@ The unit tests cover, among other things:
 - **Rain and umbrella rules** at 0 / 20 / 50 / 80 / 100 %, threshold boundaries, period merging and the rest-of-day window.
 - **Commute, hazard thresholds, transport-specific advice, office score and checklist**, **offline cache** (corrupt files, format versions, location mismatch) and **stale-forecast handling**.
 - **Air quality and pollen**: EPA categories, NAB pollen bands, no pollen data outside Europe, main pollutant, 24-hour peak, missing and malformed values, caching and offline fallback.
+- **UV**: WHO categories and boundaries, today's peak and high hours, after dark, daily fallback, alert levels.
 - **Alerts**: grouping, levels, commute overlap, 24-hour window, several hazards together, rain soon.
 - **Saved places**: add, edit, delete, roles and default, persistence, corrupt data, place search against a mock server, and which forecasts are loaded.
 - **Location and settings persistence**, permission and location state handling in the ViewModels.
@@ -346,7 +354,7 @@ Things that need a real device or emulator:
 
 ## Future Improvements
 
-The architecture (repository interfaces, provider-independent domain models, pure use cases) is meant to make these straightforward: a home-screen widget, UV alerts, custom notification schedules and Wear OS support.
+The architecture (repository interfaces, provider-independent domain models, pure use cases) is meant to make these straightforward: a home-screen widget and Wear OS support.
 
 ## License
 

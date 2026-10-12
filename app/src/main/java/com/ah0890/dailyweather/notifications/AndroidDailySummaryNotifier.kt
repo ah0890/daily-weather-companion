@@ -62,6 +62,7 @@ class AndroidDailySummaryNotifier(private val context: Context) : DailySummaryNo
             add(rainText(summary.rain))
             addAll(commuteLines)
             if (tips.isNotEmpty()) add(tips.joinToString(" · ")) else add(umbrellaText(summary.umbrella))
+            summary.uv?.let { add(it.describe(context.resources, hourFormatter())) }
         }.joinToString("\n")
 
         // Collapsed view: the most important commute concern, or the umbrella advice.

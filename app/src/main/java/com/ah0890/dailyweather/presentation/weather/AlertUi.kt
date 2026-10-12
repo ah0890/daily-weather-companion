@@ -4,10 +4,12 @@ import android.content.res.Resources
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.CommuteLegType
 import com.ah0890.dailyweather.domain.model.TemperatureUnit
+import com.ah0890.dailyweather.domain.model.UvOutlook
 import com.ah0890.dailyweather.domain.model.WeatherHazard
 import com.ah0890.dailyweather.domain.usecase.RainSoon
 import com.ah0890.dailyweather.domain.usecase.WeatherAlert
 import java.time.format.DateTimeFormatter
+import kotlin.math.roundToInt
 
 /**
  * One line for an alert, e.g. "⛈️ Thunderstorms possible during your evening commute." Plain
@@ -33,4 +35,12 @@ fun RainSoon.describe(res: Resources): String = when (this) {
     is RainSoon.StartingWithinHour -> res.getString(R.string.rain_soon_starting, percent)
     is RainSoon.Possible -> res.getString(R.string.rain_soon_possible, percent)
     RainSoon.NoneExpected -> res.getString(R.string.rain_soon_none)
+}
+
+/** Morning-summary line, e.g. "☀️ High UV (7) expected around 12 PM. Consider sun protection…" */
+fun UvOutlook.describe(res: Resources, hours: DateTimeFormatter): String {
+    val level = res.getString(category.labelRes)
+    val index = peakIndex.roundToInt()
+    return peakTime?.let { res.getString(R.string.uv_alert_line, level, index, it.format(hours)) }
+        ?: res.getString(R.string.uv_alert_line_no_time, level, index)
 }

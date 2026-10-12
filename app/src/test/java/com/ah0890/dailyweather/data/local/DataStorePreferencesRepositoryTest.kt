@@ -8,6 +8,7 @@ import com.ah0890.dailyweather.domain.model.TemperatureUnit
 import com.ah0890.dailyweather.domain.model.ThemeMode
 import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
+import com.ah0890.dailyweather.domain.model.UvCategory
 import com.ah0890.dailyweather.testing.InMemoryPreferencesDataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -56,6 +57,8 @@ class DataStorePreferencesRepositoryTest {
         repository.setEveningAlertTime(LocalTime.of(16, 10))
         repository.setEveningAlertDays(emptySet())
         repository.setSevereAlertsEnabled(false)
+        repository.setUvAlertEnabled(false)
+        repository.setUvAlertLevel(UvCategory.VeryHigh)
 
         val saved = repository.preferences.first()
         assertEquals(setOf(DayOfWeek.SUNDAY, DayOfWeek.MONDAY), saved.workdays)
@@ -64,6 +67,8 @@ class DataStorePreferencesRepositoryTest {
         assertEquals(LocalTime.of(16, 10), saved.eveningAlertTime)
         assertEquals(emptySet<DayOfWeek>(), saved.eveningAlertDays)
         assertEquals(false, saved.severeAlertsEnabled)
+        assertEquals(false, saved.uvAlertEnabled)
+        assertEquals(UvCategory.VeryHigh, saved.uvAlertLevel)
     }
 
     @Test
@@ -84,6 +89,7 @@ class DataStorePreferencesRepositoryTest {
             it[stringPreferencesKey("theme_mode")] = ""
             it[stringPreferencesKey("transport_mode")] = "Hovercraft"
             it[intPreferencesKey("workdays")] = 1 shl 7
+            it[stringPreferencesKey("uv_alert_level")] = "Low"
             it[intPreferencesKey("daily_notification_days")] = -1
             it[intPreferencesKey("commute_morning_minutes")] = -5
             it[intPreferencesKey("commute_evening_minutes")] = 24 * 60
