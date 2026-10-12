@@ -68,10 +68,12 @@ import com.ah0890.dailyweather.presentation.components.openNotificationSettings
 import com.ah0890.dailyweather.presentation.components.openUrl
 import com.ah0890.dailyweather.presentation.components.requestNotificationPermission
 import com.ah0890.dailyweather.presentation.components.text
+import com.ah0890.dailyweather.notifications.NotificationKind
 import com.ah0890.dailyweather.presentation.home.HomeViewModel
 import com.ah0890.dailyweather.presentation.weather.emoji
 import com.ah0890.dailyweather.presentation.weather.labelRes
 import com.ah0890.dailyweather.ui.theme.cardContainer
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -107,10 +109,27 @@ fun SettingsRoute(
         notificationsAllowed = context.canPostNotifications()
         onPauseOrDispose { }
     }
+    // Which notification the permission dialog was shown for.
+    var pendingKind by rememberSaveable { mutableStateOf<NotificationKind?>(null) }
     val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         notificationsAllowed = context.canPostNotifications()
         // Only switch on if notifications were actually allowed.
-        if (granted) settingsViewModel.setDailyNotificationEnabled(true)
+        if (granted) {
+            when (pendingKind) {
+                NotificationKind.MorningSummary -> settingsViewModel.setDailyNotificationEnabled(true)
+                NotificationKind.EveningCommute -> settingsViewModel.setEveningAlertEnabled(true)
+                null -> Unit
+            }
+        }
+        pendingKind = null
+    }
+    fun enableWithPermission(kind: NotificationKind, enabled: Boolean, set: (Boolean) -> Unit) {
+        if (enabled && needsNotificationPermission && !context.canPostNotifications()) {
+            pendingKind = kind
+            notificationLauncher.requestNotificationPermission()
+        } else {
+            set(enabled)
+        }
     }
 
     SettingsScreen(
@@ -127,13 +146,16 @@ fun SettingsRoute(
                 }
             },
             setNotificationsEnabled = { enabled ->
-                if (enabled && needsNotificationPermission && !context.canPostNotifications()) {
-                    notificationLauncher.requestNotificationPermission()
-                } else {
-                    settingsViewModel.setDailyNotificationEnabled(enabled)
-                }
+                enableWithPermission(NotificationKind.MorningSummary, enabled, settingsViewModel::setDailyNotificationEnabled)
             },
             setNotificationTime = settingsViewModel::setDailyNotificationTime,
+            setNotificationDays = settingsViewModel::setDailyNotificationDays,
+            setEveningAlertEnabled = { enabled ->
+                enableWithPermission(NotificationKind.EveningCommute, enabled, settingsViewModel::setEveningAlertEnabled)
+            },
+            setEveningAlertTime = settingsViewModel::setEveningAlertTime,
+            setEveningAlertDays = settingsViewModel::setEveningAlertDays,
+            setWorkdays = settingsViewModel::setWorkdays,
             openNotificationSettings = { context.openNotificationSettings() },
             setMorningCommute = settingsViewModel::setMorningCommute,
             setEveningCommute = settingsViewModel::setEveningCommute,
@@ -150,6 +172,11 @@ class SettingsActions(
     val updateLocation: () -> Unit = {},
     val setNotificationsEnabled: (Boolean) -> Unit = {},
     val setNotificationTime: (LocalTime) -> Unit = {},
+    val setNotificationDays: (Set<DayOfWeek>) -> Unit = {},
+    val setEveningAlertEnabled: (Boolean) -> Unit = {},
+    val setEveningAlertTime: (LocalTime) -> Unit = {},
+    val setEveningAlertDays: (Set<DayOfWeek>) -> Unit = {},
+    val setWorkdays: (Set<DayOfWeek>) -> Unit = {},
     val openNotificationSettings: () -> Unit = {},
     val setMorningCommute: (LocalTime) -> Unit = {},
     val setEveningCommute: (LocalTime) -> Unit = {},
@@ -222,13 +249,30 @@ fun SettingsScreen(
                 checked = preferences.dailyNotificationEnabled,
                 onCheckedChange = actions.setNotificationsEnabled,
             )
+            if (preferences.dailyNotificationEnabled) {
+                ClickableRow(
+                    title = stringResource(R.string.settings_notifications_time),
+                    value = preferences.dailyNotificationTime.format(timeFormatter),
+                    onClick = { editing = "notification" },
+                )
+                DaysRow(stringResource(R.string.settings_notifications_days), preferences.dailyNotificationDays, actions.setNotificationDays)
+            }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            ClickableRow(
-                title = stringResource(R.string.settings_notifications_time),
-                value = preferences.dailyNotificationTime.format(timeFormatter),
-                onClick = { editing = "notification" },
+            SwitchRow(
+                title = stringResource(R.string.settings_evening_switch),
+                summary = stringResource(R.string.settings_evening_switch_summary),
+                checked = preferences.eveningAlertEnabled,
+                onCheckedChange = actions.setEveningAlertEnabled,
             )
-            if (preferences.dailyNotificationEnabled && !notificationsAllowed) {
+            if (preferences.eveningAlertEnabled) {
+                ClickableRow(
+                    title = stringResource(R.string.settings_notifications_time),
+                    value = preferences.eveningAlertTime.format(timeFormatter),
+                    onClick = { editing = "evening_alert" },
+                )
+                DaysRow(stringResource(R.string.settings_notifications_days), preferences.eveningAlertDays, actions.setEveningAlertDays)
+            }
+            if ((preferences.dailyNotificationEnabled || preferences.eveningAlertEnabled) && !notificationsAllowed) {
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -252,6 +296,8 @@ fun SettingsScreen(
         }
 
         Section(R.string.settings_section_commute) {
+            DaysRow(stringResource(R.string.settings_workdays), preferences.workdays, actions.setWorkdays)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             ClickableRow(
                 title = stringResource(R.string.settings_commute_morning),
                 value = preferences.commuteTimes.morning.format(timeFormatter),
@@ -337,6 +383,11 @@ fun SettingsScreen(
         "evening" -> TimeDialog(
             initial = preferences.commuteTimes.evening,
             onConfirm = { actions.setEveningCommute(it); editing = null },
+            onDismiss = { editing = null },
+        )
+        "evening_alert" -> TimeDialog(
+            initial = preferences.eveningAlertTime,
+            onConfirm = { actions.setEveningAlertTime(it); editing = null },
             onDismiss = { editing = null },
         )
         "transport" -> TransportDialog(

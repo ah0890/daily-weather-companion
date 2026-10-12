@@ -10,6 +10,8 @@
     <!-- Office day card -->
     <string name="office_day_title_today">Office day</string>
     <string name="office_day_title_tomorrow">Tomorrow\'s office day</string>
+    <!-- e.g. "Office day · Monday" -->
+    <string name="office_day_title_on">Office day · %1$s</string>
     <!-- e.g. "Advice for 🏍️ Motorcycle" -->
     <string name="office_day_transport">Advice for %1$s %2$s</string>
     <string name="office_day_change_transport">Change</string>
@@ -78,6 +80,7 @@
     <!-- Travel checklist -->
     <string name="checklist_title_today">Today\'s travel checklist</string>
     <string name="checklist_title_tomorrow">Tomorrow\'s travel checklist</string>
+    <string name="checklist_title_on">Travel checklist · %1$s</string>
     <string name="checklist_umbrella">Umbrella</string>
     <string name="checklist_rain_gear">Rain gear</string>
     <string name="checklist_motorcycle">Motorcycle</string>
@@ -90,6 +93,18 @@
     <string name="checklist_car_morning">Consider the car for the morning trip</string>
     <string name="checklist_car_return">Consider the car for the return trip</string>
     <string name="checklist_car_both">Consider the car today</string>
+
+    <!-- 7-day workday analysis -->
+    <string name="week_title">Plan your week</string>
+    <string name="week_best">Best commute day: %1$s</string>
+    <string name="week_riskiest">Highest-risk commute day: %1$s</string>
+    <string name="week_uncertainty">Based on the forecast for your office days. Forecasts several days ahead are less certain.</string>
+    <string name="week_status_good">Good commute</string>
+    <string name="week_status_take_care">Take care</string>
+    <string name="week_status_umbrella">Carry an umbrella</string>
+    <string name="week_status_rain_gear">Pack rain gear</string>
+    <string name="week_status_high_rain">High rain risk</string>
+    <string name="week_status_difficult">Difficult commute</string>
 
     <!-- Settings -->
     <string name="settings_transport">My transportation</string>

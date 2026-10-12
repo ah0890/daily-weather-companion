@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -43,7 +44,9 @@ import com.ah0890.dailyweather.presentation.weather.rememberHourFormatter
 import com.ah0890.dailyweather.presentation.weather.temperatureText
 import com.ah0890.dailyweather.presentation.weather.textRes
 import com.ah0890.dailyweather.ui.theme.cardContainer
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.time.format.FormatStyle
 
 /**
@@ -56,6 +59,7 @@ fun OfficeDayCard(
     advice: List<LegAdvice>,
     score: OfficeWeatherScore,
     mode: TransportMode,
+    today: LocalDate,
     onChangeTransport: () -> Unit,
 ) {
     Card(
@@ -66,7 +70,7 @@ fun OfficeDayCard(
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = stringResource(if (summary.isToday) R.string.office_day_title_today else R.string.office_day_title_tomorrow),
+                    text = dayTitle(summary.date, today, R.string.office_day_title_today, R.string.office_day_title_tomorrow, R.string.office_day_title_on),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier
@@ -201,6 +205,14 @@ private fun LegSection(advice: LegAdvice) {
             )
         }
     }
+}
+
+/** "Office day", "Tomorrow's office day" or "Office day · Monday". */
+@Composable
+fun dayTitle(date: LocalDate, today: LocalDate, todayRes: Int, tomorrowRes: Int, onDayRes: Int): String = when (date) {
+    today -> stringResource(todayRes)
+    today.plusDays(1) -> stringResource(tomorrowRes)
+    else -> stringResource(onDayRes, date.dayOfWeek.getDisplayName(TextStyle.FULL, LocalLocale.current.platformLocale))
 }
 
 private val RAIN = setOf(WeatherHazard.RainLikely, WeatherHazard.RainPossible)

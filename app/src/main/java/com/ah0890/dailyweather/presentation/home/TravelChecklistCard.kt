@@ -27,10 +27,11 @@ import com.ah0890.dailyweather.domain.model.CommuteLegType
 import com.ah0890.dailyweather.presentation.weather.emoji
 import com.ah0890.dailyweather.presentation.weather.labelRes
 import com.ah0890.dailyweather.ui.theme.cardContainer
+import java.time.LocalDate
 
 /** A short list of what to take along. Not shown when there is nothing worth mentioning. */
 @Composable
-fun TravelChecklistCard(entries: List<ChecklistEntry>, isToday: Boolean) {
+fun TravelChecklistCard(entries: List<ChecklistEntry>, date: LocalDate, today: LocalDate) {
     if (entries.isEmpty()) return
     Card(
         shape = MaterialTheme.shapes.extraLarge,
@@ -39,7 +40,7 @@ fun TravelChecklistCard(entries: List<ChecklistEntry>, isToday: Boolean) {
     ) {
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                text = stringResource(if (isToday) R.string.checklist_title_today else R.string.checklist_title_tomorrow),
+                text = dayTitle(date, today, R.string.checklist_title_today, R.string.checklist_title_tomorrow, R.string.checklist_title_on),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.semantics { heading() },

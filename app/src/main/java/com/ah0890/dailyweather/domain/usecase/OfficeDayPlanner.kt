@@ -3,14 +3,21 @@ package com.ah0890.dailyweather.domain.usecase
 import com.ah0890.dailyweather.domain.model.CommuteTimes
 import com.ah0890.dailyweather.domain.model.OfficeDay
 import com.ah0890.dailyweather.domain.model.TransportMode
+import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.model.WeatherForecast
+import java.time.DayOfWeek
 
 /** Combines the commute, travel advice, score and checklist for the next office day. */
 object OfficeDayPlanner {
 
-    /** @return null when the forecast doesn't cover the next commute. */
-    fun plan(forecast: WeatherForecast, times: CommuteTimes, mode: TransportMode): OfficeDay? {
-        val summary = CommuteAnalysis.summary(forecast, times) ?: return null
+    /** @return null when no workday is set or the forecast doesn't cover the next commute. */
+    fun plan(
+        forecast: WeatherForecast,
+        times: CommuteTimes,
+        mode: TransportMode,
+        workdays: Set<DayOfWeek> = UserPreferences.EVERY_DAY,
+    ): OfficeDay? {
+        val summary = CommuteAnalysis.summary(forecast, times, workdays) ?: return null
         val workday = CommuteAnalysis.workdayHours(forecast, summary)
         return OfficeDay(
             summary = summary,

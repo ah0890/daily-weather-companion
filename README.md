@@ -2,7 +2,7 @@
 
 A calm, location-aware Android weather app built around one question: **what does today's weather mean for my workday?**
 
-> **Version 1.0.1**, being extended into a personal weather and office-commute assistant. Covered by 236 unit tests. Built for personal daily use.
+> **Version 1.0.1**, being extended into a personal weather and office-commute assistant. Covered by 272 unit tests. Built for personal daily use.
 
 ## Overview
 
@@ -31,8 +31,9 @@ Secondary information (humidity, wind, UV, visibility) stays available but visua
 | My transportation: motorcycle, car, public transport, walking, other | ✅ Done |
 | 7-day forecast with expandable day details and hour-by-hour rain | ✅ Done |
 | Offline cache of the last forecast with "last updated" notice | ✅ Done |
-| Daily ~7:00 AM weather notification (WorkManager) | ✅ Done |
-| Settings: location, commute times, transport, °C/°F, System/Light/Dark theme, privacy, about | ✅ Done |
+| Morning summary and evening commute alert with per-day schedules (WorkManager) | ✅ Done |
+| Office days; 7-day commute indicators with best and highest-risk commute day | ✅ Done |
+| Settings: location, office days, commute times, transport, notification days, °C/°F, System/Light/Dark theme, privacy, about | ✅ Done |
 
 ## Screenshots
 
@@ -136,6 +137,8 @@ The **Office day** card looks at the departure hour and the hour after it for th
 
 The **Office Weather Score** starts at 100 and subtracts 0.3 points per percent of rain chance on each trip and fixed penalties for hazards (full on a trip, half between trips). 75+ is *Good*, 45–74 *Moderate*, below 45 *Poor*. It summarises the forecast and is not a safety rating.
 
+**Office days** (default Monday–Friday) decide which day the card shows: on a day off, or after the evening trip, it shows the next office day ("Office day · Monday"). On the **7 days** screen every office day gets a small indicator (🟢 Good commute, 🟡 Carry an umbrella / Take care, 🔴 High rain risk / Difficult commute), and a *Plan your week* card names the best and highest-risk commute days when they differ, with a reminder that later days are less certain.
+
 **Today's travel checklist** lists only what is relevant: umbrella or rain gear, "consider the car for the return trip" (motorcycle), jacket (feels like ≤ 15 °C, 3 °C colder when riding), water (feels like ≥ 32 °C), sunglasses (bright daytime trip) and sun protection (UV ≥ 6).
 
 ## Offline Behaviour
@@ -188,19 +191,33 @@ The **Privacy** page (Settings → Privacy) explains in plain language that the 
 
 ## Notification System
 
-A short **morning summary** (default **7:00**, configurable in Settings) shows the day's condition, high/low, peak rain chance, when rain is likely and the umbrella advice, e.g.:
+Two notifications, each with its own switch, time and days (presets *Every day*, *Weekdays*, *Weekends*, or any custom selection):
+
+**Morning summary** (default 7:00, Monday–Friday): the day's condition, high/low, peak rain chance and rain timing, and on office days the commute for your transport, e.g.:
 
 > **🌦️ Today in London**
 > Rain · 16° / 9° · Rain chance 78%
 > Rain is most likely between 2 PM and 5 PM.
-> ☂️ Umbrella recommended
+> Morning commute: rain 12% · 🟢 Bike conditions look favourable
+> Return trip: rain 74% · 🔴 Riding conditions may be difficult
+> 🚗 Consider the car or public transport · 🌧️ Pack rain gear
 
-How it is scheduled, and why:
+**Evening commute alert** (default 15:30, Monday–Friday): a heads-up about the trip home, posted **only when there is something to act on** (rain chance ≥ 30 %, a hazard, or a tip), e.g.:
 
-- **WorkManager one-time job that re-schedules itself** after each run. The delay is recomputed from the calendar every day, so the summary stays at the same wall-clock time across time-zone and daylight-saving changes (a fixed 24-hour periodic job would drift).
-- **No exact-alarm permission.** Android 12+ restricts exact alarms, and a daily summary doesn't need minute precision; Android may delay delivery slightly (Doze) to save battery. The summary arrives *around* the chosen time.
-- **Survives restarts and reboots:** WorkManager persists the job; the app also re-checks the schedule on every start (without shifting it) and re-schedules immediately when the time or switch changes.
-- **No background location:** the job uses the *saved* location and downloads a fresh forecast, falling back to an offline copy up to 6 hours old. If no usable data is available after a few retries, or the job runs more than 3 hours late (e.g. the phone was off), that day's summary is skipped rather than showing stale advice.
+> **🌧️ Office return · London**
+> Rain chance 74%
+> Rain is most likely between 4 PM and 6 PM.
+> 🔴 Riding conditions may be difficult
+> 🚗 Consider the car or public transport
+
+How they are scheduled, and why:
+
+- **WorkManager one-time jobs that re-schedule themselves** after each run (`daily_weather_summary`, `evening_commute_alert`). The next run is computed from the calendar on the selected days, so notifications stay at the same wall-clock time across daylight-saving changes (a fixed 24-hour periodic job would drift).
+- **Time-zone and clock changes:** a receiver for `TIMEZONE_CHANGED` / `TIME_SET` re-schedules both, so 7:00 means 7:00 local time after travelling.
+- **No exact-alarm permission.** Android 12+ restricts exact alarms, and these notifications don't need minute precision; Android may delay delivery slightly (Doze) to save battery. They arrive *around* the chosen time.
+- **Survives restarts and reboots:** WorkManager persists the jobs; the app also re-checks the schedule on every start (without shifting it) and re-schedules immediately when a time, day or switch changes. Selecting no days is the same as switching off.
+- **Late runs:** a run more than 3 hours after its most recent scheduled time (e.g. the phone was off, or Friday's job was delayed into Saturday) is skipped rather than showing stale advice. The evening alert is also skipped once the trip home is over.
+- **No background location:** the jobs use the *saved* location and download a fresh forecast, falling back to an offline copy up to 6 hours old, with a few retries.
 - **Android 13+ permission:** `POST_NOTIFICATIONS` is requested only after an explanation — a one-time card on the Today screen ("Turn on" / "Not now") or the Settings switch. If notifications are blocked, Settings says so and links to the system page.
 
 ## Security
@@ -267,7 +284,7 @@ Create a keystore once with `keytool -genkeypair -v -keystore release.jks -keyal
 ## Testing
 
 ```bash
-./gradlew testDebugUnitTest    # JVM unit tests (236)
+./gradlew testDebugUnitTest    # JVM unit tests (272)
 ./gradlew lintDebug            # Android Lint
 ```
 
@@ -277,7 +294,7 @@ The unit tests cover, among other things:
 - **Rain and umbrella rules** at 0 / 20 / 50 / 80 / 100 %, threshold boundaries, period merging and the rest-of-day window.
 - **Commute, hazard thresholds, transport-specific advice, office score and checklist**, **offline cache** (corrupt files, format versions, location mismatch) and **stale-forecast handling**.
 - **Location and settings persistence**, permission and location state handling in the ViewModels.
-- **Notification scheduling** (including daylight-saving changes, late runs and retries).
+- **Notification scheduling**: weekdays, weekends and custom days, no days, custom times, daylight-saving and time-zone changes, late runs and retries; morning and evening notification content; workday selection and the 7-day commute ratings.
 
 ### Manual test checklist
 
@@ -297,7 +314,7 @@ Things that need a real device or emulator:
 
 ## Future Improvements
 
-The architecture (repository interfaces, provider-independent domain models, pure use cases) is meant to make these straightforward: workday notification schedules, multiple saved locations, a home-screen widget, severe-weather alerts, air quality, pollen, UV alerts, custom notification schedules and Wear OS support.
+The architecture (repository interfaces, provider-independent domain models, pure use cases) is meant to make these straightforward: multiple saved locations, a home-screen widget, severe-weather alerts, air quality, pollen, UV alerts, custom notification schedules and Wear OS support.
 
 ## License
 

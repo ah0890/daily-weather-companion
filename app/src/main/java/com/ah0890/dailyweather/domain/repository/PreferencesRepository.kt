@@ -5,6 +5,7 @@ import com.ah0890.dailyweather.domain.model.ThemeMode
 import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
 import kotlinx.coroutines.flow.Flow
+import java.time.DayOfWeek
 import java.time.LocalTime
 
 interface PreferencesRepository {
@@ -25,6 +26,16 @@ interface PreferencesRepository {
     suspend fun setDailyNotificationEnabled(enabled: Boolean)
 
     suspend fun setDailyNotificationTime(time: LocalTime)
+
+    suspend fun setDailyNotificationDays(days: Set<DayOfWeek>)
+
+    suspend fun setWorkdays(days: Set<DayOfWeek>)
+
+    suspend fun setEveningAlertEnabled(enabled: Boolean)
+
+    suspend fun setEveningAlertTime(time: LocalTime)
+
+    suspend fun setEveningAlertDays(days: Set<DayOfWeek>)
 
     suspend fun setNotificationPromptDismissed()
 }

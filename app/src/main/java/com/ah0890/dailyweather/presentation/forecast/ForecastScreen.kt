@@ -56,6 +56,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ah0890.dailyweather.R
 import com.ah0890.dailyweather.domain.model.DailyForecast
 import com.ah0890.dailyweather.domain.model.HourlyForecast
+import com.ah0890.dailyweather.domain.model.TransportMode
+import com.ah0890.dailyweather.domain.usecase.CommuteStatus
+import com.ah0890.dailyweather.domain.usecase.DayCommute
+import com.ah0890.dailyweather.domain.usecase.WorkWeek
+import com.ah0890.dailyweather.domain.usecase.WorkWeekAnalysis
+import com.ah0890.dailyweather.presentation.components.LocalUserPreferences
 import com.ah0890.dailyweather.presentation.home.HomeViewModel
 import com.ah0890.dailyweather.presentation.home.WeatherUiState
 import com.ah0890.dailyweather.presentation.weather.HourlyForecastRow
@@ -103,6 +109,12 @@ fun ForecastScreen(
 ) {
     // Only one day is expanded at a time; remembered across rotation.
     var expandedDate by rememberSaveable { mutableStateOf<String?>(null) }
+    val preferences = LocalUserPreferences.current
+    val loaded = weather as? WeatherUiState.Loaded
+    val week = remember(loaded?.forecast, preferences.commuteTimes, preferences.transportMode, preferences.workdays) {
+        loaded?.let { WorkWeekAnalysis.analyse(it.forecast, preferences.commuteTimes, preferences.transportMode, preferences.workdays) }
+            ?: WorkWeek(emptyMap(), best = null, riskiest = null)
+    }
 
     PullToRefreshBox(
         isRefreshing = (weather as? WeatherUiState.Loaded)?.isRefreshing == true,
@@ -131,6 +143,9 @@ fun ForecastScreen(
                     val today = forecast.current.time.toLocalDate()
                     val span = TemperatureSpan.of(forecast.daily)
                     item(key = "stale") { StaleForecastNotice(weather.fetchedAt, weather.refreshError) }
+                    if (week.best != null || week.riskiest != null) {
+                        item(key = "week") { WeekPlanCard(week) }
+                    }
                     items(forecast.daily, key = { it.date.toString() }) { day ->
                         val key = day.date.toString()
                         DayCard(
@@ -138,6 +153,7 @@ fun ForecastScreen(
                             label = DayLabel.of(day.date, today),
                             span = span,
                             hours = forecast.hoursOn(day.date),
+                            commute = week.days[day.date],
                             expanded = expandedDate == key,
                             onToggle = { expandedDate = if (expandedDate == key) null else key },
                         )
@@ -167,6 +183,64 @@ private fun Header(locationName: String?) {
     }
 }
 
+/** Best and highest-risk commute days, with a reminder that later days are less certain. */
+@Composable
+private fun WeekPlanCard(week: WorkWeek) {
+    val locale = LocalLocale.current.platformLocale
+    Card(
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.cardContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(CardPadding), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = stringResource(R.string.week_title),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.semantics { heading() },
+            )
+            week.best?.let {
+                Text(
+                    text = stringResource(R.string.week_best, it.dayOfWeek.getDisplayName(TextStyle.FULL, locale)),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            week.riskiest?.let {
+                Text(
+                    text = stringResource(R.string.week_riskiest, it.dayOfWeek.getDisplayName(TextStyle.FULL, locale)),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Text(
+                text = stringResource(R.string.week_uncertainty),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun commuteStatusText(status: CommuteStatus): String = stringResource(
+    when (status) {
+        CommuteStatus.Good -> R.string.week_status_good
+        CommuteStatus.TakeCare -> R.string.week_status_take_care
+        CommuteStatus.CarryUmbrella ->
+            if (LocalUserPreferences.current.transportMode == TransportMode.Motorcycle) R.string.week_status_rain_gear else R.string.week_status_umbrella
+        CommuteStatus.HighRainRisk -> R.string.week_status_high_rain
+        CommuteStatus.Difficult -> R.string.week_status_difficult
+    },
+)
+
+private val CommuteStatus.dot: String
+    get() = when (this) {
+        CommuteStatus.Good -> "🟢"
+        CommuteStatus.TakeCare, CommuteStatus.CarryUmbrella -> "🟡"
+        CommuteStatus.HighRainRisk, CommuteStatus.Difficult -> "🔴"
+    }
+
 @Composable
 private fun Loading() {
     Row(
@@ -189,6 +263,7 @@ private fun DayCard(
     label: DayLabel,
     span: TemperatureSpan?,
     hours: List<HourlyForecast>,
+    commute: DayCommute?,
     expanded: Boolean,
     onToggle: () -> Unit,
 ) {
@@ -209,11 +284,13 @@ private fun DayCard(
     val condition = stringResource(day.condition.labelRes)
     val chance = day.precipitationProbabilityMax
 
+    val commuteText = commute?.let { commuteStatusText(it.status) }
     val description = buildString {
         if (label !is DayLabel.Weekday) append(name).append(", ")
         append(day.date.format(longDate)).append(", ").append(condition)
         if (chance != null) append(", ").append(stringResource(R.string.hourly_rain_chance_description, chance))
         append(", ").append(stringResource(R.string.weather_high_low_description, high, low))
+        if (commuteText != null) append(", ").append(commuteText)
     }
     val toggleLabel = stringResource(if (expanded) R.string.forecast_hide_details else R.string.forecast_show_details)
     val stateText = stringResource(if (expanded) R.string.forecast_expanded else R.string.forecast_collapsed)
@@ -242,6 +319,14 @@ private fun DayCard(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (commute != null && commuteText != null) {
+                    Text(
+                        text = commute.status.dot + " " + commuteText,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                    )
+                }
             }
             Text(text = day.condition.emoji(isDay = true), fontSize = 24.sp)
             Text(

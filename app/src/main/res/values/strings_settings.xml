@@ -2,7 +2,7 @@
 <resources>
     <!-- Settings -->
     <string name="settings_section_location">Location</string>
-    <string name="settings_section_commute">Commute</string>
+    <string name="settings_section_commute">Office schedule</string>
     <string name="settings_section_display">Display</string>
     <string name="settings_section_about">About</string>
 

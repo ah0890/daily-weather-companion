@@ -2,7 +2,7 @@
 <resources>
     <!-- Notification channel (shown in system settings) -->
     <string name="notification_channel_name">Morning weather summary</string>
-    <string name="notification_channel_description">Today\'s weather, rain timing and umbrella advice once each morning.</string>
+    <string name="notification_channel_description">Today\'s weather, your commute and umbrella advice on the mornings you choose.</string>
 
     <!-- Notification content; the first argument is a weather emoji -->
     <string name="notification_title_location">%1$s Today in %2$s</string>
@@ -13,12 +13,33 @@
     <string name="notification_umbrella_consider">🌂 Consider taking an umbrella</string>
     <string name="notification_umbrella_not_needed">Probably no umbrella needed</string>
 
+    <!-- Commute lines in the morning summary -->
+    <string name="notification_leg_morning">Morning commute</string>
+    <string name="notification_leg_evening">Return trip</string>
+    <!-- e.g. "Return trip: rain 72% · 🔴 Riding conditions may be difficult" -->
+    <string name="notification_leg">%1$s: %2$s</string>
+    <string name="notification_leg_rain">rain %1$d%%</string>
+
+    <!-- Evening commute alert -->
+    <string name="notification_commute_channel_name">Commute alerts</string>
+    <string name="notification_commute_channel_description">A heads-up before your trip home when rain or difficult conditions are expected.</string>
+    <string name="notification_evening_title_location">%1$s Office return · %2$s</string>
+    <string name="notification_evening_title">%1$s Office return</string>
+
     <!-- Settings -->
-    <string name="settings_section_notifications">Morning summary</string>
-    <string name="settings_notifications_switch">Daily weather notification</string>
-    <string name="settings_notifications_switch_summary">Today\'s weather, rain timing and umbrella advice</string>
+    <string name="settings_section_notifications">Notifications</string>
+    <string name="settings_notifications_switch">Morning summary</string>
+    <string name="settings_notifications_switch_summary">Today\'s weather, your commute and what to take</string>
     <string name="settings_notifications_time">Time</string>
-    <string name="settings_notifications_hint">Arrives at about this time. Android may delay it slightly to save battery. Uses your saved location.</string>
+    <string name="settings_notifications_days">Days</string>
+    <string name="settings_evening_switch">Evening commute alert</string>
+    <string name="settings_evening_switch_summary">A heads-up before you leave the office, only when rain or difficult conditions are expected</string>
+    <string name="settings_notifications_hint">Notifications arrive at about the chosen time; Android may delay them slightly to save battery. They use your saved location.</string>
+    <string name="settings_workdays">Office days</string>
+    <string name="days_every_day">Every day</string>
+    <string name="days_weekdays">Weekdays</string>
+    <string name="days_weekends">Weekends</string>
+    <string name="days_none">No days selected</string>
     <string name="settings_notifications_blocked">Notifications are turned off for this app in system settings.</string>
     <string name="settings_notifications_open_settings">Open notification settings</string>
 

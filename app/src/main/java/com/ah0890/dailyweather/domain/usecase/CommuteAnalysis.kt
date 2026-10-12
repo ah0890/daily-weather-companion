@@ -7,7 +7,9 @@ import com.ah0890.dailyweather.domain.model.CommuteRain
 import com.ah0890.dailyweather.domain.model.CommuteSummary
 import com.ah0890.dailyweather.domain.model.CommuteTimes
 import com.ah0890.dailyweather.domain.model.HourlyForecast
+import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.model.WeatherForecast
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -23,23 +25,33 @@ object CommuteAnalysis {
     private const val TRIP_HOURS = 2L
 
     /**
-     * Commute for today, or for tomorrow once today's evening trip is over. Legs already in the
-     * past are left out. Returns null if the forecast doesn't cover the chosen day.
+     * Commute for the next workday: today until its evening trip is over, otherwise the next day
+     * in [workdays]. Legs already in the past are left out. Returns null if no workday is set or
+     * the forecast doesn't cover the chosen day.
      */
-    fun summary(forecast: WeatherForecast, times: CommuteTimes): CommuteSummary? {
+    fun summary(
+        forecast: WeatherForecast,
+        times: CommuteTimes,
+        workdays: Set<DayOfWeek> = UserPreferences.EVERY_DAY,
+    ): CommuteSummary? {
         val now = forecast.current.time
         val today = now.toLocalDate()
         val eveningOver = !now.isBefore(today.atTime(times.evening).plusHours(TRIP_HOURS - 1))
-        val date = if (eveningOver) today.plusDays(1) else today
+        val first = if (eveningOver) today.plusDays(1) else today
+        val date = generateSequence(first) { it.plusDays(1) }.take(7).firstOrNull { it.dayOfWeek in workdays } ?: return null
 
-        val legs = listOfNotNull(
-            leg(forecast, CommuteLegType.Morning, date, times.morning),
-            leg(forecast, CommuteLegType.Evening, date, times.evening),
-        ).filter { date != today || it.departure.plusHours(TRIP_HOURS - 1).isAfter(now) }
+        val legs = legsOn(forecast, date, times)
+            .filter { date != today || it.departure.plusHours(TRIP_HOURS - 1).isAfter(now) }
         if (legs.isEmpty()) return null
 
         return CommuteSummary(date = date, isToday = date == today, legs = legs, advice = advice(legs))
     }
+
+    /** Both trips on [date], including ones already in the past (for planning views). */
+    fun legsOn(forecast: WeatherForecast, date: LocalDate, times: CommuteTimes): List<CommuteLeg> = listOfNotNull(
+        leg(forecast, CommuteLegType.Morning, date, times.morning),
+        leg(forecast, CommuteLegType.Evening, date, times.evening),
+    )
 
     /**
      * Hours from the morning trip (or from now, once it is over) to the end of the evening trip on

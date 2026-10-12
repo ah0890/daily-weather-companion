@@ -2,9 +2,12 @@ package com.ah0890.dailyweather.notifications
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.DayOfWeek
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
@@ -58,6 +61,53 @@ class NotificationScheduleTest {
     fun `a run long after the time is too late`() {
         assertTrue(NotificationSchedule.isTooLate(at(2026, 10, 10, 10, 1), seven))
         assertTrue(NotificationSchedule.isTooLate(at(2026, 10, 10, 18, 0), seven))
+    }
+
+    private val weekdays = setOf(DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY, DayOfWeek.FRIDAY)
+
+    @Test
+    fun `weekday schedule skips from friday to monday`() {
+        // 9 Oct 2026 is a Friday.
+        assertEquals(at(2026, 10, 12, 7), NotificationSchedule.nextRun(at(2026, 10, 9, 8, 0), seven, weekdays))
+    }
+
+    @Test
+    fun `weekend schedule waits for saturday`() {
+        val weekend = setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY)
+
+        assertEquals(at(2026, 10, 10, 7), NotificationSchedule.nextRun(at(2026, 10, 7, 12, 0), seven, weekend))
+    }
+
+    @Test
+    fun `a single custom day a week later`() {
+        // Wednesday 7 Oct after the time → next Wednesday.
+        assertEquals(at(2026, 10, 14, 7), NotificationSchedule.nextRun(at(2026, 10, 7, 9, 0), seven, setOf(DayOfWeek.WEDNESDAY)))
+    }
+
+    @Test
+    fun `no days selected means no run`() {
+        assertNull(NotificationSchedule.nextRun(at(2026, 10, 7, 9, 0), seven, emptySet()))
+        assertNull(NotificationSchedule.delayUntilNextRun(at(2026, 10, 7, 9, 0), seven, emptySet()))
+        assertTrue(NotificationSchedule.isTooLate(at(2026, 10, 7, 7, 5), seven, emptySet()))
+    }
+
+    @Test
+    fun `a friday run delayed into saturday is too late`() {
+        assertFalse(NotificationSchedule.isTooLate(at(2026, 10, 9, 8, 0), seven, weekdays))
+        assertTrue(NotificationSchedule.isTooLate(at(2026, 10, 10, 7, 5), seven, weekdays))
+        assertEquals(at(2026, 10, 9, 7), NotificationSchedule.previousRun(at(2026, 10, 10, 7, 5), seven, weekdays))
+    }
+
+    @Test
+    fun `after a time-zone change the next run is at the local time in the new zone`() {
+        // Same instant, seen from Karachi after travelling: 07:00 there, not 07:00 London time.
+        val inKarachi = at(2026, 10, 10, 5, 0).withZoneSameInstant(ZoneId.of("Asia/Karachi")) // 09:00 local
+
+        val next = NotificationSchedule.nextRun(inKarachi, seven)!!
+
+        assertEquals(LocalTime.of(7, 0), next.toLocalTime())
+        assertEquals(ZoneId.of("Asia/Karachi"), next.zone)
+        assertEquals(LocalDate.of(2026, 10, 11), next.toLocalDate())
     }
 
     @Test

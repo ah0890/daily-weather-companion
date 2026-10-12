@@ -7,6 +7,7 @@ import com.ah0890.dailyweather.domain.model.CommuteRain
 import com.ah0890.dailyweather.domain.model.CommuteTimes
 import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.TravelRating
+import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.model.WeatherCondition
 import com.ah0890.dailyweather.domain.model.WeatherForecast
 import com.ah0890.dailyweather.domain.model.WeatherHazard
@@ -173,6 +174,23 @@ class CommuteAnalysisTest {
         val afternoon = forecast(now = day.atTime(13, 30))
         val later = CommuteAnalysis.workdayHours(afternoon, CommuteAnalysis.summary(afternoon, times)!!)
         assertEquals(day.atTime(13, 0), later.first().time)
+    }
+
+    @Test
+    fun `on a day off the next office day is shown`() {
+        // 10 Oct 2026 is a Saturday; with weekday office days the next one is Monday the 12th.
+        val base = forecast(now = day.atTime(9, 0))
+        val threeDays = base.copy(hourly = List(72) { i -> base.hourly[i % 48].copy(time = day.atStartOfDay().plusHours(i.toLong())) })
+        val summary = CommuteAnalysis.summary(threeDays, times, UserPreferences.WEEKDAYS)!!
+
+        assertEquals(LocalDate.of(2026, 10, 12), summary.date)
+        assertFalse(summary.isToday)
+        assertEquals(2, summary.legs.size)
+    }
+
+    @Test
+    fun `no office days means no commute`() {
+        assertNull(CommuteAnalysis.summary(forecast(now = day.atTime(6, 0)), times, emptySet()))
     }
 
     @Test

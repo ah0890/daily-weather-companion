@@ -11,13 +11,16 @@ import com.ah0890.dailyweather.domain.model.ThemeMode
 import com.ah0890.dailyweather.domain.model.TransportMode
 import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.repository.PreferencesRepository
+import com.ah0890.dailyweather.notifications.NotificationKind
 import com.ah0890.dailyweather.notifications.NotificationScheduler
+import com.ah0890.dailyweather.notifications.sync
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.IOException
+import java.time.DayOfWeek
 import java.time.LocalTime
 
 class SettingsViewModel(
@@ -38,24 +41,34 @@ class SettingsViewModel(
 
     fun setTransportMode(mode: TransportMode) = launch { repository.setTransportMode(mode) }
 
-    fun setDailyNotificationEnabled(enabled: Boolean) = launch {
-        repository.setDailyNotificationEnabled(enabled)
-        if (enabled) {
-            scheduler.schedule(repository.preferences.first().dailyNotificationTime, NotificationScheduler.Policy.Replace)
-        } else {
-            scheduler.cancel()
-        }
-    }
+    fun setWorkdays(days: Set<DayOfWeek>) = launch { repository.setWorkdays(days) }
 
-    fun setDailyNotificationTime(time: LocalTime) = launch {
-        repository.setDailyNotificationTime(time)
-        if (repository.preferences.first().dailyNotificationEnabled) {
-            scheduler.schedule(time, NotificationScheduler.Policy.Replace)
-        }
-    }
+    fun setDailyNotificationEnabled(enabled: Boolean) =
+        updateNotification(NotificationKind.MorningSummary) { repository.setDailyNotificationEnabled(enabled) }
+
+    fun setDailyNotificationTime(time: LocalTime) =
+        updateNotification(NotificationKind.MorningSummary) { repository.setDailyNotificationTime(time) }
+
+    fun setDailyNotificationDays(days: Set<DayOfWeek>) =
+        updateNotification(NotificationKind.MorningSummary) { repository.setDailyNotificationDays(days) }
+
+    fun setEveningAlertEnabled(enabled: Boolean) =
+        updateNotification(NotificationKind.EveningCommute) { repository.setEveningAlertEnabled(enabled) }
+
+    fun setEveningAlertTime(time: LocalTime) =
+        updateNotification(NotificationKind.EveningCommute) { repository.setEveningAlertTime(time) }
+
+    fun setEveningAlertDays(days: Set<DayOfWeek>) =
+        updateNotification(NotificationKind.EveningCommute) { repository.setEveningAlertDays(days) }
 
     /** The one-time prompt on the Today screen was answered either way. */
     fun dismissNotificationPrompt() = launch { repository.setNotificationPromptDismissed() }
+
+    /** Saves a change, then re-schedules (or cancels) that notification to match. */
+    private fun updateNotification(kind: NotificationKind, change: suspend () -> Unit) = launch {
+        change()
+        scheduler.sync(kind, repository.preferences.first(), NotificationScheduler.Policy.Replace)
+    }
 
     private fun launch(block: suspend () -> Unit) {
         viewModelScope.launch {

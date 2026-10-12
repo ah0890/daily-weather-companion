@@ -4,7 +4,11 @@ import com.ah0890.dailyweather.data.local.DataStorePreferencesRepository
 import com.ah0890.dailyweather.domain.model.LocationData
 import com.ah0890.dailyweather.domain.model.SavedLocation
 import com.ah0890.dailyweather.domain.model.TemperatureUnit
+import com.ah0890.dailyweather.domain.model.TransportMode
+import com.ah0890.dailyweather.domain.model.TravelRating
+import com.ah0890.dailyweather.domain.model.TravelTip
 import com.ah0890.dailyweather.domain.model.UmbrellaAdvice
+import com.ah0890.dailyweather.domain.model.UserPreferences
 import com.ah0890.dailyweather.domain.model.WeatherError
 import com.ah0890.dailyweather.domain.model.WeatherResult
 import com.ah0890.dailyweather.domain.repository.LocationRepository
@@ -18,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import java.time.Clock
 import java.time.Instant
@@ -38,6 +43,7 @@ class DailySummaryWorkTest {
         override fun show(summary: DailySummary, unit: TemperatureUnit) {
             shown += summary to unit
         }
+        override fun showEveningAlert(alert: EveningAlert, unit: TemperatureUnit) = Unit
     }
 
     private class FakeLocations(initial: SavedLocation?) : LocationRepository {
@@ -59,6 +65,47 @@ class DailySummaryWorkTest {
         start = LocalDateTime.of(2026, 10, 10, 7, 0),
         hourlyRainChances = List(17) { if (it in 7..9) 80 else 10 }, // 14:00–17:00
     ).let { it.copy(current = it.current.copy(time = LocalDateTime.of(2026, 10, 10, 7, 0))) }
+
+    // The sample day (10 Oct 2026) is a Saturday; most tests are about content, not days.
+    @Before
+    fun everyDay() = runTest {
+        preferences.setDailyNotificationDays(UserPreferences.EVERY_DAY)
+    }
+
+    @Test
+    fun `weekday-only summaries skip the weekend`() = runTest {
+        preferences.setDailyNotificationDays(UserPreferences.WEEKDAYS)
+        val weather = FakeWeatherRepository()
+
+        // Saturday 07:02: the last scheduled run was Friday, so this one is far too late.
+        assertEquals(Outcome.Skipped(SkipReason.TooLate), work(weather).run(attempt = 0))
+        assertTrue(weather.requests.isEmpty())
+    }
+
+    @Test
+    fun `no commute lines when today is not an office day`() = runTest {
+        val weather = FakeWeatherRepository { WeatherResult.Success(rainyForecast(), now) }
+
+        val outcome = work(weather).run(attempt = 0) as Outcome.Notified
+
+        assertTrue(outcome.summary.commute.isEmpty())
+    }
+
+    @Test
+    fun `on an office day the summary includes the commute for the chosen transport`() = runTest {
+        preferences.setWorkdays(UserPreferences.EVERY_DAY)
+        preferences.setTransportMode(TransportMode.Motorcycle)
+        // Rain 14:00–17:00 in the sample; the evening trip leaves at 17:00 and the hour before is wet.
+        preferences.setEveningCommute(LocalTime.of(16, 0))
+        val weather = FakeWeatherRepository { WeatherResult.Success(rainyForecast(), now) }
+
+        val outcome = work(weather).run(attempt = 0) as Outcome.Notified
+
+        val (morning, evening) = outcome.summary.commute
+        assertEquals(TravelRating.Favorable, morning.rating)
+        assertEquals(TravelRating.Unfavorable, evening.rating)
+        assertTrue(TravelTip.ConsiderAlternative in evening.tips)
+    }
 
     @Test
     fun `posts a summary with rain timing and umbrella advice`() = runTest {
