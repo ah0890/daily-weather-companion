@@ -2,7 +2,7 @@
 
 A calm, location-aware Android weather app built around one question: **what does today's weather mean for my workday?**
 
-> **Version 1.0.1**, being extended into a personal weather and office-commute assistant. Covered by 346 unit tests. Built for personal daily use.
+> **Version 2.0.0**: a personal weather and office-commute assistant for Android phones, with a home-screen widget and a Wear OS companion. Covered by 346 unit tests. Built for personal daily use. © 2026 ah0890, all rights reserved (see [LICENSE](LICENSE)).
 
 ## Overview
 
@@ -293,7 +293,11 @@ How they are scheduled, and why:
 
 - No API keys or secrets are required by the weather provider.
 - `local.properties`, `keystore.properties`, keystores and `.env` files are git-ignored. If a keyed provider is ever added, its key should be read from `local.properties` into `BuildConfig` at build time and never committed.
-- HTTPS only (`usesCleartextTraffic="false"`); no request logging, so coordinates never reach logcat.
+- HTTPS only: cleartext is disabled and a network security config trusts only the system's certificate authorities (no user-installed CAs), in the phone and watch apps. No request logging, so coordinates and search terms never reach logcat.
+- Only the launcher activity is exported; the widget and time-change receivers are private, and library components are protected by system permissions. Notification `PendingIntent`s are immutable.
+- Release builds are minified and shrunk with R8 and signed with a key kept outside the repository.
+- Stored data is validated when read (preferences, saved places, cached forecasts); corrupt or unknown values fall back to safe defaults instead of crashing. User input is trimmed and length-limited.
+- Only the forecasts that are needed are requested: the place on screen and the saved home and office, never every saved place.
 - Coordinates are rounded to ~1 km before they are sent anywhere or stored.
 - App data is excluded from cloud backup and device-to-device transfer (`data_extraction_rules.xml`).
 - API responses are validated: malformed or partial data is rejected or skipped, never trusted blindly.
@@ -304,7 +308,7 @@ Permissions in the installed app (from the merged manifest):
 | --- | --- |
 | `ACCESS_COARSE_LOCATION` | Approximate location for the local forecast (foreground only) |
 | `INTERNET` | Downloading forecasts |
-| `POST_NOTIFICATIONS` | The morning summary (Android 13+, asked after an explanation) |
+| `POST_NOTIFICATIONS` | Morning summary, evening commute alert, severe-weather and UV notifications (Android 13+, asked after an explanation) |
 | `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `ACCESS_NETWORK_STATE` | Added by WorkManager so the daily job survives reboots and runs reliably |
 
 WorkManager's `FOREGROUND_SERVICE` permission is removed because the app has no foreground work.
@@ -378,19 +382,36 @@ Things that need a real device or emulator:
 1. First launch: explanation → permission dialog; deny once / twice; *Open settings*.
 2. Weather loads for the location; pull to refresh; switch tabs (no extra download).
 3. Airplane mode: cached forecast with *"Last updated …"*; cold start offline.
-4. Settings: °C/°F and theme apply immediately; change commute and notification times.
-5. Notification: set the time a few minutes ahead and lock the phone; check it arrives (Android may delay it by several minutes) and survives a reboot.
+4. Settings: °C/°F and theme apply immediately; change commute and notification times and days.
+5. Saved places: add Home by current location and Office by search; switch places from the Today header; check the route names in the Office day card.
+6. Widget: add *Office weather* to the home screen; it updates after the app loads a forecast; light and dark wallpapers.
+7. Wear OS: install `wear-release.apk` on a watch (with adb), allow location, check the summary.
+8. Notification: set the time a few minutes ahead and lock the phone; check it arrives (Android may delay it by several minutes) and survives a reboot.
 
 ## Known Limitations
 
 - The morning summary arrives *around* the chosen time; Android's battery optimisation can delay it, and some manufacturers' aggressive battery savers can block background work unless the app is exempted.
 - Place names depend on the phone's geocoder; without one (or offline) the app shows "Current location" / "Saved location".
 - The forecast covers 7 days; very old cached data can't be moved forward beyond that.
+- **Pollen** data from Open-Meteo covers Europe only; elsewhere (e.g. Pakistan) the app says pollen isn't available.
+- **Air quality and pollen** are model estimates (CAMS), not readings from a local station.
+- **Alerts** are based on forecast thresholds, not official warnings from a national weather service.
+- The **Wear OS** app doesn't sync with the phone (no Play Services): it uses its own location and the default commute times, and it hasn't yet been tested on a real watch.
+- The widget shows cached data only; if the app and notifications haven't run for a while it is marked *Outdated*.
 
 ## Future Improvements
 
 The architecture (repository interfaces, provider-independent domain models, pure use cases) makes further additions straightforward, e.g. syncing settings to the watch or a regional pollen provider.
 
+## Installing the APK on a Phone
+
+1. Copy `DailyWeather-2.0.0.apk` to the phone (USB, cloud drive or e-mail to yourself).
+2. Open it from the Files app. Android asks to allow installs from that app (*Settings → Apps → Special app access → Install unknown apps*); allow it for that one app only.
+3. Tap **Install**. If an older debug build is installed, uninstall it first: builds signed with different keys can't replace each other. Updates from 1.x release builds install over the old version and keep its data.
+4. Optionally compare the file's SHA-256 with the `.sha256` file next to it before installing.
+
 ## License
 
-No license has been chosen yet; all rights reserved by the author until one is added.
+**All rights reserved.** © 2026 ah0890. The source code is public for viewing only; no licence is granted to use, copy, modify or distribute it without written permission. See [LICENSE](LICENSE).
+
+Weather, air-quality and place data: [Open-Meteo.com](https://open-meteo.com/), licensed under CC BY 4.0.

@@ -1,7 +1,7 @@
 # Project Context — Daily Weather Companion
 
 Hand-over notes for continuing development in a new session. **Read this first**; open source files only when needed.
-Last updated: 2026-10-12 — v1.0.1 released; **"office commute assistant" upgrade in progress** (see section 8).
+Last updated: 2026-10-13 — **v2.0.0 released** (versionCode 3): office commute assistant, widget, Wear OS; all 10 upgrade milestones done.
 
 > **Starting a new chat:** say *"Read context.md, then …"* followed by what you want (a new feature, a bug fix, a new APK).
 > The assistant should check `git status` / `git log -3` first and follow the working rules in section 2.
@@ -13,7 +13,7 @@ Priorities: today's weather → rain probability → rain timing → temperature
 Design: calm, premium, readable in sunlight, light + dark. Not a data dump.
 
 - Repo: <https://github.com/ah0890/daily-weather-companion> (branch `main`, public)
-- Package / applicationId: `com.ah0890.dailyweather` · current version **1.0.1 (versionCode 2)**
+- Package / applicationId: `com.ah0890.dailyweather` (phone and watch) · current version **2.0.0 (versionCode 3)** · licence: **all rights reserved** (`LICENSE`, also shown in Settings → About)
 - Weather API: **Open-Meteo** (free, no API key, CC BY 4.0 attribution shown in Settings). Place names: Android `Geocoder`.
 
 ## 2. Working rules (must follow)
@@ -54,7 +54,7 @@ Gotchas:
 
 - Keystore: `D:\Android\keys\dailyweather-release.jks` (alias `dailyweather`), **outside the repo**. Passwords are only in the git-ignored `keystore.properties` in the project root. Losing either means future updates can't install over the current app (uninstall/reinstall needed). The owner should keep a backup.
 - For every new APK: bump `versionCode` (+1) and `versionName` in `app/build.gradle.kts`, run the standard checks, `./gradlew assembleRelease`, verify with `D:/Android/Sdk/build-tools/37.0.0/apksigner.bat verify app/build/outputs/apk/release/app-release.apk`, copy to `D:\DailyWeather\DailyWeather-<version>.apk`.
-- Latest: `D:\DailyWeather\DailyWeather-1.0.1.apk` (1.9 MB, APK Signature Scheme v2).
+- Latest: `D:\DailyWeather\DailyWeather-2.0.0.apk` (+ `DailyWeather-Wear-2.0.0.apk`, `.sha256` files). The wear module has its own `versionCode`/`versionName` in `wear/build.gradle.kts`; bump both apps together.
 
 ## 5. Tech stack (versions in `gradle/libs.versions.toml`)
 
@@ -109,6 +109,7 @@ Tests: **346** (app 310, core 33, wear 3), all passing; lint clean. Helpers in `
 ## 8. History and status
 
 Milestones (commit): foundation `1e590c7` · README `878384a` · domain + API `cab5bb3` · repository `11db3c0` · location permission `ca2215a` · saved location `5807709` · context notes `c2611b1` · current weather `a7eeeb5` · hourly `1fa4209` · 7-day `ab4f55d` · rain/umbrella `40fff9c` · commute `c61de46` · offline cache `600339d` · settings `cca313c` · notification `34839dd` · accessibility `a3ed22c`, `0e3a14e` · hardening `861b02f` · release prep `81249ec` · final README `2216528` · night icons `3bc276d` · 1.0.1 (header fix, version bump, this file).
+2.0.0 milestones: office commute `2c7022a` · workday schedules `eaec91c` · saved places `32f9ae8` · severe alerts `a19fba2` · air quality `9b79e15` · pollen `c7e7571` · UV `37cc567` (+ `0dcc88f`) · widget `3ff8385` · `:core` + Wear OS `ce78f58` · polish/security/licence/2.0.0 (this commit).
 
 Verified on the emulator (2026-10-11): Today, 7-day + expanded day, notification prompt → permission, scheduled job (+9 h to 07:00), forced morning run posted the notification and queued the next day, signed release build runs (location, download, navigation).
 **Upgrade to "Personal Weather & Office Commute Assistant"** (started 2026-10-12; one commit per milestone, each pushed):
@@ -121,13 +122,13 @@ Verified on the emulator (2026-10-11): Today, 7-day + expanded day, notification
 7. UV status card + UV alert (prefs `uv_alert_enabled`/`uv_alert_level` High|VeryHigh) as a morning-summary line.
 8. Home-screen widget (Glance 1.2.0, cache-only).
 9. `:core` module split + Wear OS companion (`:wear`).
-10. (next) Polish + security pass, "all rights reserved" licence, version 2.0.0 (versionCode 3) signed APK.
+10. Security pass (network security config: HTTPS + system CAs only, exported-component review), LICENSE (all rights reserved), README install steps, version 2.0.0 signed APKs.
 
 
-Not yet verified on a device: offline/airplane mode, °F and Dark theme switching, reboot persistence, Privacy page in the release build.
+Not yet verified on a device (emulator kept off at the owner's request): everything added in 2.0.0 (Office day, places, alerts, air quality, UV, widget, Wear OS), plus offline/airplane mode, °F and Dark theme switching, reboot persistence. See README "Manual test checklist".
 
 ## 9. Ideas / open items
 
 - Owner to-dos: install the APK on the phone, back up the keystore + `keystore.properties`, add screenshots to `docs/screenshots/`, choose a licence (README says "all rights reserved").
-- Possible next features: multiple saved locations, home-screen widget, severe-weather alerts, air quality/pollen, UV alerts, custom notification days, Wear OS.
+- Possible next features: sync settings to the watch (would need the Wearable Data Layer / Play Services), a regional pollen provider for Pakistan, a Wear tile or complication, device testing of 2.0.0.
 - GitHub "Contributors" may briefly show a cached "claude" entry from rewritten early history; the API already lists only `ah0890`.
