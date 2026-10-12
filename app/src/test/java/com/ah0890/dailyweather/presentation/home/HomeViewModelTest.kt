@@ -8,6 +8,7 @@ import com.ah0890.dailyweather.domain.repository.LocationRepository
 import com.ah0890.dailyweather.location.LocationProvider
 import com.ah0890.dailyweather.location.LocationResult
 import com.ah0890.dailyweather.location.PlaceNameResolver
+import com.ah0890.dailyweather.testing.FakeAirQualityRepository
 import com.ah0890.dailyweather.testing.FakeWeatherRepository
 import com.ah0890.dailyweather.testing.InMemoryPreferencesDataStore
 import com.ah0890.dailyweather.testing.MainDispatcherRule
@@ -75,6 +76,7 @@ class HomeViewModelTest {
         FakeWeatherRepository(),
         clock,
         DataStorePlacesRepository(InMemoryPreferencesDataStore()),
+        FakeAirQualityRepository(),
     )
 
     private val HomeViewModel.state get() = locationState.value

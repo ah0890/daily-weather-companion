@@ -90,6 +90,7 @@ fun HomeRoute(
     val weather by viewModel.weatherState.collectAsStateWithLifecycle()
     val places by viewModel.places.collectAsStateWithLifecycle()
     val commute by viewModel.commuteState.collectAsStateWithLifecycle()
+    val airQuality by viewModel.airQualityState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = LocalActivity.current
 
@@ -150,6 +151,7 @@ fun HomeRoute(
         notificationPromptTime = preferences.dailyNotificationTime.takeIf { showNotificationPrompt },
         places = places,
         commute = commute,
+        airQuality = airQuality,
     )
 }
 
@@ -176,6 +178,7 @@ fun HomeScreen(
     notificationPromptTime: LocalTime? = null,
     places: Places = Places(),
     commute: CommuteForecasts = CommuteForecasts(),
+    airQuality: AirQualityUiState = AirQualityUiState.Idle,
 ) {
     val greeting = remember { greetingFor(LocalTime.now().hour) }
 
@@ -211,6 +214,7 @@ fun HomeScreen(
                     onChangeTransport = actions.openSettings,
                     commute = commute,
                     places = places,
+                    airQuality = airQuality,
                 )
                 if (notificationPromptTime != null) {
                     NotificationPromptCard(

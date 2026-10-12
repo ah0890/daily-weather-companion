@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- e.g. "Air quality: Moderate" -->
+    <string name="air_title">Air quality: %1$s</string>
+    <string name="air_unavailable">Air quality unavailable</string>
+    <!-- e.g. "US AQI 72" -->
+    <string name="air_index">US AQI %1$d</string>
+    <string name="air_main_pollutant">Main pollutant: %1$s</string>
+    <string name="air_peak">May reach %1$s around %2$s</string>
+    <string name="air_show_details">Show pollutant details</string>
+    <string name="air_hide_details">Hide pollutant details</string>
+    <!-- e.g. "18 µg/m³ · index 64" -->
+    <string name="air_reading">%1$s µg/m³ · index %2$d</string>
+    <string name="air_reading_no_index">%1$s µg/m³</string>
+    <string name="air_source">Model data from CAMS via Open-Meteo, not a local measuring station.</string>
+
+    <string name="aqi_good">Good</string>
+    <string name="aqi_moderate">Moderate</string>
+    <string name="aqi_sensitive">Unhealthy for sensitive groups</string>
+    <string name="aqi_unhealthy">Unhealthy</string>
+    <string name="aqi_very_unhealthy">Very unhealthy</string>
+    <string name="aqi_hazardous">Hazardous</string>
+
+    <string name="pollutant_pm25">Fine particles (PM2.5)</string>
+    <string name="pollutant_pm10">Coarse particles (PM10)</string>
+    <string name="pollutant_ozone">Ozone</string>
+    <string name="pollutant_no2">Nitrogen dioxide</string>
+    <string name="pollutant_so2">Sulphur dioxide</string>
+    <string name="pollutant_co">Carbon monoxide</string>
+</resources>

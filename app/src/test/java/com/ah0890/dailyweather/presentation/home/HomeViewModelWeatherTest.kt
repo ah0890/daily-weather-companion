@@ -1,6 +1,7 @@
 package com.ah0890.dailyweather.presentation.home
 
 import com.ah0890.dailyweather.data.local.DataStorePlacesRepository
+import com.ah0890.dailyweather.domain.model.AirQuality
 import com.ah0890.dailyweather.domain.model.Coordinates
 import com.ah0890.dailyweather.domain.model.LocationData
 import com.ah0890.dailyweather.domain.model.SavedLocation
@@ -10,6 +11,7 @@ import com.ah0890.dailyweather.domain.repository.LocationRepository
 import com.ah0890.dailyweather.location.LocationProvider
 import com.ah0890.dailyweather.location.LocationResult
 import com.ah0890.dailyweather.location.PlaceNameResolver
+import com.ah0890.dailyweather.testing.FakeAirQualityRepository
 import com.ah0890.dailyweather.testing.FakeWeatherRepository
 import com.ah0890.dailyweather.testing.InMemoryPreferencesDataStore
 import com.ah0890.dailyweather.testing.MainDispatcherRule
@@ -24,6 +26,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 
@@ -74,6 +77,7 @@ class HomeViewModelWeatherTest {
         weather,
         clock,
         DataStorePlacesRepository(InMemoryPreferencesDataStore()),
+        FakeAirQualityRepository(),
     )
 
     private fun success(at: Instant = clock.now) = { c: Coordinates ->
@@ -269,5 +273,33 @@ class HomeViewModelWeatherTest {
         val forecast = (vm.weatherState.value as WeatherUiState.Loaded).forecast
         assertEquals(13, forecast.current.time.hour)
         assertEquals(13, forecast.upcomingHours().first().time.hour)
+    }
+
+    @Test
+    fun `air quality is loaded for the location on screen`() = runTest {
+        val air = AirQuality(LocalDateTime.of(2026, 10, 10, 7, 0), 42, emptyList())
+        val airRepository = FakeAirQualityRepository(air)
+        val vm = HomeViewModel(
+            FixedLocationProvider(london),
+            NoNames,
+            FakeLocationRepository(savedAt(paris)),
+            FakeWeatherRepository(success()),
+            clock,
+            DataStorePlacesRepository(InMemoryPreferencesDataStore()),
+            airRepository,
+        )
+        advanceUntilIdle()
+
+        assertEquals(AirQualityUiState.Available(air), vm.airQualityState.value)
+        assertEquals(listOf(paris), airRepository.requests)
+    }
+
+    @Test
+    fun `missing air quality doesn't affect the forecast`() = runTest {
+        val vm = viewModel(FakeWeatherRepository(success()))
+        advanceUntilIdle()
+
+        assertEquals(AirQualityUiState.Unavailable, vm.airQualityState.value)
+        assertTrue(vm.weatherState.value is WeatherUiState.Loaded)
     }
 }

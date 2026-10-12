@@ -9,9 +9,11 @@ import com.ah0890.dailyweather.data.local.DataStoreLocationRepository
 import com.ah0890.dailyweather.data.local.DataStorePlacesRepository
 import com.ah0890.dailyweather.data.local.DataStorePreferencesRepository
 import com.ah0890.dailyweather.data.local.FileWeatherCache
+import com.ah0890.dailyweather.data.remote.openmeteo.OpenMeteoAirQualityRepository
 import com.ah0890.dailyweather.data.remote.openmeteo.OpenMeteoDataSource
 import com.ah0890.dailyweather.data.remote.openmeteo.OpenMeteoPlaceSearch
 import com.ah0890.dailyweather.data.repository.DefaultWeatherRepository
+import com.ah0890.dailyweather.domain.repository.AirQualityRepository
 import com.ah0890.dailyweather.domain.repository.LocationRepository
 import com.ah0890.dailyweather.domain.repository.PlaceSearchRepository
 import com.ah0890.dailyweather.domain.repository.PlacesRepository
@@ -66,6 +68,8 @@ class AppContainer(context: Context) {
     }
 
     val placeSearch: PlaceSearchRepository by lazy { OpenMeteoPlaceSearch.create() }
+
+    val airQualityRepository: AirQualityRepository by lazy { OpenMeteoAirQualityRepository.create() }
 
     val locationRepository: LocationRepository by lazy {
         DataStoreLocationRepository(

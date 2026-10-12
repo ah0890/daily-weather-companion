@@ -10,6 +10,7 @@ import com.ah0890.dailyweather.domain.repository.LocationRepository
 import com.ah0890.dailyweather.location.LocationProvider
 import com.ah0890.dailyweather.location.LocationResult
 import com.ah0890.dailyweather.location.PlaceNameResolver
+import com.ah0890.dailyweather.testing.FakeAirQualityRepository
 import com.ah0890.dailyweather.testing.FakeWeatherRepository
 import com.ah0890.dailyweather.testing.InMemoryPreferencesDataStore
 import com.ah0890.dailyweather.testing.MainDispatcherRule
@@ -63,7 +64,7 @@ class HomeViewModelPlacesTest {
     private val weather = FakeWeatherRepository({ c -> WeatherResult.Success(SampleForecasts.forecast(c), clock.instant()) })
 
     private fun viewModel(saved: SavedLocation? = SavedLocation(LocationData(london, "London"), clock.instant())) =
-        HomeViewModel(provider, NoNames, FakeLocationRepository(saved), weather, clock, places)
+        HomeViewModel(provider, NoNames, FakeLocationRepository(saved), weather, clock, places, FakeAirQualityRepository())
 
     @Test
     fun `the default place is shown first without looking up the device location`() = runTest {

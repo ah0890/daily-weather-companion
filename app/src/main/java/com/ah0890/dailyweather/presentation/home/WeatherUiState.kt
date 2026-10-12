@@ -1,5 +1,6 @@
 package com.ah0890.dailyweather.presentation.home
 
+import com.ah0890.dailyweather.domain.model.AirQuality
 import com.ah0890.dailyweather.domain.model.WeatherError
 import com.ah0890.dailyweather.domain.model.WeatherForecast
 import java.time.Instant
@@ -26,6 +27,19 @@ sealed interface WeatherUiState {
 
     /** Loading failed and there is no earlier forecast to fall back on. */
     data class Error(val error: WeatherError) : WeatherUiState
+}
+
+/** Optional air-quality part of the Today screen. */
+sealed interface AirQualityUiState {
+    /** No location, so nothing to show. */
+    data object Idle : AirQualityUiState
+
+    data object Loading : AirQualityUiState
+
+    data class Available(val airQuality: AirQuality) : AirQualityUiState
+
+    /** Offline, provider error or no data for this place: say so, never guess. */
+    data object Unavailable : AirQualityUiState
 }
 
 /**

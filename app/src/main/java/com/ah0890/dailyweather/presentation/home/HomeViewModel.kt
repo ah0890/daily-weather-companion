@@ -12,6 +12,7 @@ import com.ah0890.dailyweather.domain.model.Places
 import com.ah0890.dailyweather.domain.model.SavedLocation
 import com.ah0890.dailyweather.domain.model.WeatherForecast
 import com.ah0890.dailyweather.domain.model.WeatherResult
+import com.ah0890.dailyweather.domain.repository.AirQualityRepository
 import com.ah0890.dailyweather.domain.repository.LocationRepository
 import com.ah0890.dailyweather.domain.repository.PlacesRepository
 import com.ah0890.dailyweather.domain.repository.WeatherRepository
@@ -58,6 +59,7 @@ class HomeViewModel(
     private val weatherRepository: WeatherRepository,
     private val clock: Clock = Clock.systemUTC(),
     private val placesRepository: PlacesRepository,
+    private val airQualityRepository: AirQualityRepository,
 ) : ViewModel() {
 
     private val status = MutableStateFlow<LocationStatus>(LocationStatus.Checking)
@@ -90,6 +92,10 @@ class HomeViewModel(
                 deviceLocation = device,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, LocationUiState())
+
+    private val air = MutableStateFlow<AirQualityUiState>(AirQualityUiState.Idle)
+    val airQualityState: StateFlow<AirQualityUiState> = air.asStateFlow()
+    private var airJob: Job? = null
 
     private val commute = MutableStateFlow(CommuteForecasts())
     val commuteState: StateFlow<CommuteForecasts> = commute.asStateFlow()
@@ -135,6 +141,18 @@ class HomeViewModel(
         if (status.value != LocationStatus.Locating) status.value = LocationStatus.Idle
     }
 
+    /** Air quality is optional: its failure never affects the forecast. */
+    private fun loadAirQuality(coordinates: Coordinates, refresh: Boolean) {
+        airJob?.cancel()
+        // A refresh keeps showing the current value; a new place starts from "loading".
+        if (!refresh) air.value = AirQualityUiState.Loading
+        airJob = viewModelScope.launch {
+            air.value = airQualityRepository.airQuality(coordinates, refresh)
+                ?.let { AirQualityUiState.Available(it) }
+                ?: AirQualityUiState.Unavailable
+        }
+    }
+
     /**
      * Loads the home and office forecasts for the commute. The forecast on screen is reused, and
      * cached copies younger than [WEATHER_REFRESH_AFTER] are used unless [force] is set.
@@ -177,6 +195,7 @@ class HomeViewModel(
      *   shown without any network request.
      */
     private fun loadWeather(coordinates: Coordinates, useFreshCache: Boolean) {
+        loadAirQuality(coordinates, refresh = !useFreshCache)
         weatherJob?.cancel()
         // Keep showing the previous forecast while refreshing the same place.
         var shown = (weather.value as? WeatherUiState.Loaded)?.takeIf { weatherCoordinates == coordinates }
@@ -315,6 +334,7 @@ class HomeViewModel(
                     container.locationRepository,
                     container.weatherRepository,
                     placesRepository = container.placesRepository,
+                    airQualityRepository = container.airQualityRepository,
                 )
             }
         }

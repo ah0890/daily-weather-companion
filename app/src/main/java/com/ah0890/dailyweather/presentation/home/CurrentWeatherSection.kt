@@ -80,6 +80,7 @@ fun CurrentWeatherSection(
     onChangeTransport: () -> Unit = {},
     commute: CommuteForecasts = CommuteForecasts(),
     places: Places = Places(),
+    airQuality: AirQualityUiState = AirQualityUiState.Idle,
 ) {
     val preferences = LocalUserPreferences.current
     // Fade between loading, error and loaded; refreshes within "loaded" update in place.
@@ -94,7 +95,7 @@ fun CurrentWeatherSection(
         label = "weather",
     ) { shown ->
         Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-            WeatherContent(shown, edgePadding, onRetry, preferences, onChangeTransport, commute, places)
+            WeatherContent(shown, edgePadding, onRetry, preferences, onChangeTransport, commute, places, airQuality)
         }
     }
 }
@@ -108,6 +109,7 @@ private fun WeatherContent(
     onChangeTransport: () -> Unit,
     commute: CommuteForecasts,
     places: Places,
+    airQuality: AirQualityUiState,
 ) {
     when (state) {
         WeatherUiState.Idle -> Unit
@@ -145,6 +147,7 @@ private fun WeatherContent(
             }
             val outlook = remember(state.forecast) { RainAnalysis.outlookForRestOfToday(state.forecast) }
             TodayOutlookCard(outlook, now = state.forecast.current.time)
+            AirQualityCard(airQuality)
             HourlyForecastRow(
                 hours = state.forecast.upcomingHours(),
                 title = stringResource(R.string.hourly_title),
